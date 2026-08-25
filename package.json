@@ -1,0 +1,19 @@
+{
+  "name": "cloud-banking-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Enterprise Cloud-Native Banking Microservices Platform",
+  "packageManager": "pnpm@11.24.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter './apps/*' dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2"
+  }
+}

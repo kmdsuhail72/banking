@@ -1,0 +1,5 @@
+frontend:
+  image: banking-frontend:latest
+
+backend:
+  image: banking-backend:latest

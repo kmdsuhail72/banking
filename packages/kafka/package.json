@@ -1,0 +1,19 @@
+{
+  "name": "@banking/kafka",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w"
+  },
+  "dependencies": {
+    "@banking/shared-types": "workspace:*",
+    "@banking/logger": "workspace:*",
+    "kafkajs": "^2.2.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}
