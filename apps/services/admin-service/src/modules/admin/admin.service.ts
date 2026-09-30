@@ -1,7 +1,7 @@
-﻿import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { AdminEntity } from '../../entities/admin.entity';
+﻿import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { AdminEntity } from "../../entities/admin.entity";
 
 /** Back-office admin panel */
 @Injectable()

@@ -1,6 +1,6 @@
-﻿import { Controller } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
-import { LoanService } from './loan.service';
+﻿import { Controller } from "@nestjs/common";
+import { GrpcMethod } from "@nestjs/microservices";
+import { LoanService } from "./loan.service";
 
 /** gRPC server-side controller for LoanService proto */
 @Controller()

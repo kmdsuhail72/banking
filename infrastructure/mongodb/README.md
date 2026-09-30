@@ -6,6 +6,7 @@
 - **Storage Volume**: `mongodb_data`
 
 ### Connection String (Local)
+
 ```env
 MONGODB_URI=mongodb://localhost:27017/banking
 ```

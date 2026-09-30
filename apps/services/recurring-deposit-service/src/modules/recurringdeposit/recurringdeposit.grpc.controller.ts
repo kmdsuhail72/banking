@@ -1,6 +1,6 @@
-﻿import { Controller } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
-import { RecurringDepositService } from './recurringdeposit.service';
+﻿import { Controller } from "@nestjs/common";
+import { GrpcMethod } from "@nestjs/microservices";
+import { RecurringDepositService } from "./recurringdeposit.service";
 
 /** gRPC server-side controller for RecurringDepositService proto */
 @Controller()

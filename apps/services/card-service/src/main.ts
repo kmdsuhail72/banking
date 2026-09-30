@@ -1,16 +1,20 @@
-﻿import { startTelemetry, installMetrics, installTelemetryShutdown } from '@banking/observability';
-startTelemetry('card-service');
-import 'reflect-metadata';
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { join } from 'path';
-import { AppModule } from './app.module';
-import { createLogger } from '@banking/logger';
-import { DEFAULT_GRPC_PORTS, GRPC_PACKAGES } from '@banking/grpc';
+﻿import {
+  startTelemetry,
+  installMetrics,
+  installTelemetryShutdown,
+} from "@banking/observability";
+startTelemetry("card-service");
+import "reflect-metadata";
+import { NestFactory } from "@nestjs/core";
+import { ValidationPipe } from "@nestjs/common";
+import { MicroserviceOptions, Transport } from "@nestjs/microservices";
+import { join } from "path";
+import { AppModule } from "./app.module";
+import { createLogger } from "@banking/logger";
+import { DEFAULT_GRPC_PORTS, GRPC_PACKAGES } from "@banking/grpc";
 
 async function bootstrap() {
-  const logger = createLogger('CardService');
+  const logger = createLogger("CardService");
   const app = await NestFactory.create(AppModule);
 
   app.connectMicroservice<MicroserviceOptions>({
@@ -18,20 +22,20 @@ async function bootstrap() {
     options: {
       url: `0.0.0.0:${DEFAULT_GRPC_PORTS.CARD}`,
       package: GRPC_PACKAGES.CARD,
-      protoPath: join(__dirname, '../../../../packages/grpc/proto/card.proto'),
+      protoPath: join(__dirname, "../../../../packages/grpc/proto/card.proto"),
     },
   });
 
-  installMetrics(app, 'card-service');
+  installMetrics(app, "card-service");
   installTelemetryShutdown(app);
   app.enableCors({ origin: true, credentials: true });
-  app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
+  app.setGlobalPrefix("api/v1", { exclude: ["health", "health/(.*)"] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   await app.startAllMicroservices();
-  const port = parseInt(process.env.PORT || '4013', 10);
+  const port = parseInt(process.env.PORT || "4013", 10);
   await app.listen(port);
-  logger.info(`Card Service  HTTP :${port}  gRPC :${DEFAULT_GRPC_PORTS.CARD});
+  logger.info(`Card Service  HTTP :${port}  gRPC :${DEFAULT_GRPC_PORTS.CARD}`);
 }
 
 bootstrap();

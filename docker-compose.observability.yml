@@ -40,7 +40,11 @@ services:
 
   alertmanager:
     image: prom/alertmanager:v0.28.1
-    command: [--config.file=/etc/alertmanager/alertmanager.yaml, --storage.path=/alertmanager]
+    command:
+      [
+        --config.file=/etc/alertmanager/alertmanager.yaml,
+        --storage.path=/alertmanager,
+      ]
     volumes:
       - ./infrastructure/observability/alertmanager/alertmanager.yaml:/etc/alertmanager/alertmanager.yaml:ro
       - alertmanager_data:/alertmanager

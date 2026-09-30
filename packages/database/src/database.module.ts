@@ -1,10 +1,10 @@
-import { DynamicModule, Module, Provider } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ScheduleModule } from '@nestjs/schedule';
-import { EntityTarget } from 'typeorm';
-import { OutboxEntity } from './outbox.entity';
-import { OutboxRelayService, IOutboxEventBus } from './outbox-relay.service';
-import { buildTypeOrmConfig } from './typeorm.config';
+import { DynamicModule, Module, Provider } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { ScheduleModule } from "@nestjs/schedule";
+import { EntityTarget } from "typeorm";
+import { OutboxEntity } from "./outbox.entity";
+import { OutboxRelayService, IOutboxEventBus } from "./outbox-relay.service";
+import { buildTypeOrmConfig } from "./typeorm.config";
 
 export interface OutboxModuleOptions {
   /** The entity class created by OutboxEntityFactory(prefix) */
@@ -33,11 +33,11 @@ export class DatabaseModule {
     if (options.outbox) {
       providers.push(
         {
-          provide: 'OUTBOX_ENTITY',
+          provide: "OUTBOX_ENTITY",
           useValue: options.outbox.entity,
         },
         {
-          provide: 'OUTBOX_EVENT_BUS',
+          provide: "OUTBOX_EVENT_BUS",
           useValue: options.outbox.eventBus,
         },
         OutboxRelayService,

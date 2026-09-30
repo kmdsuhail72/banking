@@ -257,9 +257,9 @@ spec:
           image: grafana/tempo:2.7.2
           args: [-config.file=/etc/tempo/tempo.yaml]
           ports:
-            - containerPort: 3200   # HTTP API
-            - containerPort: 4317   # OTLP gRPC
-            - containerPort: 4318   # OTLP HTTP
+            - containerPort: 3200 # HTTP API
+            - containerPort: 4317 # OTLP gRPC
+            - containerPort: 4318 # OTLP HTTP
           volumeMounts:
             - name: config
               mountPath: /etc/tempo/tempo.yaml
@@ -333,10 +333,10 @@ spec:
           image: otel/opentelemetry-collector-contrib:0.123.0
           args: [--config=/etc/otelcol/config.yaml]
           ports:
-            - containerPort: 4317   # OTLP gRPC
-            - containerPort: 4318   # OTLP HTTP
-            - containerPort: 8889   # Prometheus scrape
-            - containerPort: 13133  # Health check
+            - containerPort: 4317 # OTLP gRPC
+            - containerPort: 4318 # OTLP HTTP
+            - containerPort: 8889 # Prometheus scrape
+            - containerPort: 13133 # Health check
           volumeMounts:
             - name: config
               mountPath: /etc/otelcol/config.yaml
@@ -444,7 +444,7 @@ metadata:
   namespace: observability
 type: Opaque
 stringData:
-  admin-password: "Banking@Grafana2024!"   # Change before production
+  admin-password: "Banking@Grafana2024!" # Change before production
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

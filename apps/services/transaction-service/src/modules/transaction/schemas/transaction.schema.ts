@@ -1,12 +1,12 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
-import { TransactionType, TransactionStatus } from '@banking/shared-types';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { HydratedDocument } from "mongoose";
+import { TransactionType, TransactionStatus } from "@banking/shared-types";
 
 export type TransactionDocument = HydratedDocument<Transaction>;
 
 @Schema({
   timestamps: true,
-  collection: 'transactions',
+  collection: "transactions",
 })
 export class Transaction {
   @Prop({
@@ -43,7 +43,7 @@ export class Transaction {
 
   @Prop({
     required: true,
-    default: 'INR',
+    default: "INR",
   })
   currency: string;
 

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, Length, Matches } from 'class-validator';
+import { IsString, IsOptional, Length, Matches } from "class-validator";
 
 export class UpdateBeneficiaryDto {
   @IsString()
@@ -13,7 +13,7 @@ export class UpdateBeneficiaryDto {
   @IsString()
   @IsOptional()
   @Matches(/^[A-Z]{4}0[A-Z0-9]{6}$/, {
-    message: 'ifscCode must be a valid IFSC code (e.g. HDFC0001234)',
+    message: "ifscCode must be a valid IFSC code (e.g. HDFC0001234)",
   })
   ifscCode?: string;
 }

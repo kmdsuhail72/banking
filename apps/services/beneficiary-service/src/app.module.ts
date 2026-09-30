@@ -1,7 +1,7 @@
-﻿import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@banking/database';
-import { HealthModule } from './health/health.module';
-import { BnfOutboxEntity } from './entities/bnf-outbox.entity';
+﻿import { Module } from "@nestjs/common";
+import { DatabaseModule } from "@banking/database";
+import { HealthModule } from "./health/health.module";
+import { BnfOutboxEntity } from "./entities/bnf-outbox.entity";
 
 @Module({
   imports: [

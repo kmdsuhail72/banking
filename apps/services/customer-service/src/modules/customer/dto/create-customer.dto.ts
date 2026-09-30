@@ -1,5 +1,5 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { CreateCustomerDto, ICustomerAddress } from '@banking/shared-types';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { CreateCustomerDto, ICustomerAddress } from "@banking/shared-types";
 
 export class CreateCustomerRequestDto implements CreateCustomerDto {
   @IsString()

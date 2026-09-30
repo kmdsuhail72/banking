@@ -1,14 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
 import {
   Notification,
   NotificationDocument,
   NotificationTypeEnum,
-} from './schemas/notification.schema';
-import { KafkaEventBus } from '@banking/kafka';
-import { createLogger } from '@banking/logger';
-import { appConfig } from '@banking/config';
+} from "./schemas/notification.schema";
+import { KafkaEventBus } from "@banking/kafka";
+import { createLogger } from "@banking/logger";
+import { appConfig } from "@banking/config";
 import {
   KafkaTopics,
   IMoneyDepositedPayload,
@@ -16,13 +16,13 @@ import {
   IMoneyTransferredPayload,
   IAccountCreatedPayload,
   IBankingEvent,
-} from '@banking/shared-types';
+} from "@banking/shared-types";
 
 @Injectable()
 export class NotificationService {
-  private logger = createLogger('NotificationService');
+  private logger = createLogger("NotificationService");
   private eventBus = new KafkaEventBus({
-    clientId: 'notification-service',
+    clientId: "notification-service",
     brokers: appConfig.kafka.brokers,
   });
 
@@ -34,7 +34,7 @@ export class NotificationService {
   async onModuleInit() {
     try {
       await this.startKafkaConsumer();
-      this.logger.info('NotificationService Kafka consumer started');
+      this.logger.info("NotificationService Kafka consumer started");
     } catch (err: any) {
       this.logger.warn(`Kafka consumer startup warning: ${err.message}`);
     }
@@ -43,7 +43,9 @@ export class NotificationService {
   // ─── Kafka Consumer ───────────────────────────────────────────────────────
 
   private async startKafkaConsumer() {
-    const consumer = await this.eventBus.getConsumer('notification-service-group');
+    const consumer = await this.eventBus.getConsumer(
+      "notification-service-group",
+    );
 
     const topics = [
       KafkaTopics.MONEY_DEPOSITED,
@@ -64,7 +66,9 @@ export class NotificationService {
           const event: IBankingEvent = JSON.parse(raw);
           await this.handleEvent(topic, event);
         } catch (err: any) {
-          this.logger.error(`Error processing notification event [${topic}]: ${err.message}`);
+          this.logger.error(
+            `Error processing notification event [${topic}]: ${err.message}`,
+          );
         }
       },
     });
@@ -78,9 +82,12 @@ export class NotificationService {
         await this.createNotification({
           userId: p.userId,
           type: NotificationTypeEnum.TRANSACTION,
-          title: '💰 Money Deposited',
+          title: "💰 Money Deposited",
           body: `₹${amount} has been credited to your account ${p.accountNumber || p.accountId}.`,
-          metadata: { transactionId: p.transactionId, amountMinor: p.amountMinor },
+          metadata: {
+            transactionId: p.transactionId,
+            amountMinor: p.amountMinor,
+          },
         });
         break;
       }
@@ -91,9 +98,12 @@ export class NotificationService {
         await this.createNotification({
           userId: p.userId,
           type: NotificationTypeEnum.TRANSACTION,
-          title: '💸 Money Withdrawn',
+          title: "💸 Money Withdrawn",
           body: `₹${amount} has been debited from your account ${p.accountNumber || p.accountId}.`,
-          metadata: { transactionId: p.transactionId, amountMinor: p.amountMinor },
+          metadata: {
+            transactionId: p.transactionId,
+            amountMinor: p.amountMinor,
+          },
         });
         break;
       }
@@ -104,9 +114,12 @@ export class NotificationService {
         await this.createNotification({
           userId: p.userId,
           type: NotificationTypeEnum.TRANSACTION,
-          title: '🔄 Transfer Successful',
+          title: "🔄 Transfer Successful",
           body: `₹${amount} transferred from ${p.sourceAccountNumber} to ${p.destinationAccountNumber}.`,
-          metadata: { transactionId: p.transactionId, amountMinor: p.amountMinor },
+          metadata: {
+            transactionId: p.transactionId,
+            amountMinor: p.amountMinor,
+          },
         });
         break;
       }
@@ -116,7 +129,7 @@ export class NotificationService {
         await this.createNotification({
           userId: p.userId,
           type: NotificationTypeEnum.ACCOUNT,
-          title: '🏦 Account Created',
+          title: "🏦 Account Created",
           body: `Your ${p.type} account (${p.accountNumber}) has been successfully created.`,
           metadata: { accountId: p.accountId, accountNumber: p.accountNumber },
         });
@@ -129,7 +142,7 @@ export class NotificationService {
         await this.createNotification({
           userId: p.userId,
           type: NotificationTypeEnum.PAYMENT,
-          title: '✅ Payment Successful',
+          title: "✅ Payment Successful",
           body: `Your ${p.method} payment of ₹${amount} was completed.`,
           metadata: { paymentId: p.paymentId, amountMinor: p.amountMinor },
         });
@@ -141,8 +154,8 @@ export class NotificationService {
         await this.createNotification({
           userId: p.userId,
           type: NotificationTypeEnum.PAYMENT,
-          title: '❌ Payment Failed',
-          body: `Your payment failed: ${p.failureReason || 'Unknown error'}.`,
+          title: "❌ Payment Failed",
+          body: `Your payment failed: ${p.failureReason || "Unknown error"}.`,
           metadata: { paymentId: p.paymentId },
         });
         break;
@@ -163,7 +176,9 @@ export class NotificationService {
     metadata?: Record<string, any>;
   }): Promise<NotificationDocument> {
     const notification = await this.notificationModel.create(data);
-    this.logger.info(`Created notification [${data.type}] for user ${data.userId}: ${data.title}`);
+    this.logger.info(
+      `Created notification [${data.type}] for user ${data.userId}: ${data.title}`,
+    );
     return notification;
   }
 
@@ -172,7 +187,12 @@ export class NotificationService {
   async getNotifications(
     userId: string,
     opts: { unreadOnly?: boolean; page?: number; limit?: number },
-  ): Promise<{ data: NotificationDocument[]; total: number; unreadCount: number; pages: number }> {
+  ): Promise<{
+    data: NotificationDocument[];
+    total: number;
+    unreadCount: number;
+    pages: number;
+  }> {
     const page = Math.max(1, opts.page || 1);
     const limit = Math.min(100, opts.limit || 20);
     const skip = (page - 1) * limit;
@@ -195,11 +215,9 @@ export class NotificationService {
   }
 
   async markAsRead(id: string, userId: string): Promise<NotificationDocument> {
-    const notification = await this.notificationModel.findOneAndUpdate(
-      { _id: id, userId },
-      { read: true },
-      { new: true },
-    ).exec();
+    const notification = await this.notificationModel
+      .findOneAndUpdate({ _id: id, userId }, { read: true }, { new: true })
+      .exec();
 
     if (!notification) {
       throw new NotFoundException(`Notification '${id}' not found`);
@@ -215,7 +233,10 @@ export class NotificationService {
     return { modifiedCount: result.modifiedCount };
   }
 
-  async deleteNotification(id: string, userId: string): Promise<{ message: string }> {
+  async deleteNotification(
+    id: string,
+    userId: string,
+  ): Promise<{ message: string }> {
     const notification = await this.notificationModel
       .findOneAndDelete({ _id: id, userId })
       .exec();
@@ -224,6 +245,6 @@ export class NotificationService {
       throw new NotFoundException(`Notification '${id}' not found`);
     }
 
-    return { message: 'Notification deleted' };
+    return { message: "Notification deleted" };
   }
 }

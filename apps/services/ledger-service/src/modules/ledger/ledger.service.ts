@@ -1,23 +1,26 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { LedgerEntry, LedgerEntryDocument } from './schemas/ledger-entry.schema';
-import { KafkaEventBus } from '@banking/kafka';
-import { createLogger } from '@banking/logger';
-import { appConfig } from '@banking/config';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
+import {
+  LedgerEntry,
+  LedgerEntryDocument,
+} from "./schemas/ledger-entry.schema";
+import { KafkaEventBus } from "@banking/kafka";
+import { createLogger } from "@banking/logger";
+import { appConfig } from "@banking/config";
 import {
   KafkaTopics,
   IMoneyDepositedPayload,
   IMoneyWithdrawnPayload,
   IMoneyTransferredPayload,
   IBankingEvent,
-} from '@banking/shared-types';
+} from "@banking/shared-types";
 
 @Injectable()
 export class LedgerService {
-  private logger = createLogger('LedgerService');
+  private logger = createLogger("LedgerService");
   private eventBus = new KafkaEventBus({
-    clientId: 'ledger-service',
+    clientId: "ledger-service",
     brokers: appConfig.kafka.brokers,
   });
 
@@ -29,7 +32,7 @@ export class LedgerService {
   async onModuleInit() {
     try {
       await this.startKafkaConsumer();
-      this.logger.info('LedgerService Kafka consumer started');
+      this.logger.info("LedgerService Kafka consumer started");
     } catch (err: any) {
       this.logger.warn(`Kafka consumer startup warning: ${err.message}`);
     }
@@ -38,7 +41,7 @@ export class LedgerService {
   // ─── Kafka Consumer ───────────────────────────────────────────────────────
 
   private async startKafkaConsumer() {
-    const consumer = await this.eventBus.getConsumer('ledger-service-group');
+    const consumer = await this.eventBus.getConsumer("ledger-service-group");
 
     const topics = [
       KafkaTopics.MONEY_DEPOSITED,
@@ -58,10 +61,14 @@ export class LedgerService {
         } catch (err: any) {
           if (err.code === 11000) {
             // Duplicate key — idempotent, already recorded
-            this.logger.warn(`Duplicate ledger entry skipped for topic [${topic}]`);
+            this.logger.warn(
+              `Duplicate ledger entry skipped for topic [${topic}]`,
+            );
             return;
           }
-          this.logger.error(`Error recording ledger entry [${topic}]: ${err.message}`);
+          this.logger.error(
+            `Error recording ledger entry [${topic}]: ${err.message}`,
+          );
         }
       },
     });
@@ -77,14 +84,16 @@ export class LedgerService {
         await this.ledgerModel.create({
           transactionId: p.transactionId,
           accountNumber: p.accountNumber || p.accountId,
-          entryType: 'CREDIT',
+          entryType: "CREDIT",
           amountMinor: p.amountMinor,
           currency: p.currency,
           balanceAfterMinor: 0, // Will be updated by balance queries; placeholder
-          description: 'Deposit',
+          description: "Deposit",
           occurredAt,
         });
-        this.logger.info(`Ledger CREDIT recorded for deposit ${p.transactionId}`);
+        this.logger.info(
+          `Ledger CREDIT recorded for deposit ${p.transactionId}`,
+        );
         break;
       }
 
@@ -94,14 +103,16 @@ export class LedgerService {
         await this.ledgerModel.create({
           transactionId: p.transactionId,
           accountNumber: p.accountNumber || p.accountId,
-          entryType: 'DEBIT',
+          entryType: "DEBIT",
           amountMinor: p.amountMinor,
           currency: p.currency,
           balanceAfterMinor: 0,
-          description: 'Withdrawal',
+          description: "Withdrawal",
           occurredAt,
         });
-        this.logger.info(`Ledger DEBIT recorded for withdrawal ${p.transactionId}`);
+        this.logger.info(
+          `Ledger DEBIT recorded for withdrawal ${p.transactionId}`,
+        );
         break;
       }
 
@@ -112,7 +123,7 @@ export class LedgerService {
           this.ledgerModel.create({
             transactionId: `${p.transactionId}-SRC`,
             accountNumber: p.sourceAccountNumber || p.sourceAccountId,
-            entryType: 'DEBIT',
+            entryType: "DEBIT",
             amountMinor: p.amountMinor,
             currency: p.currency,
             balanceAfterMinor: 0,
@@ -122,7 +133,7 @@ export class LedgerService {
           this.ledgerModel.create({
             transactionId: `${p.transactionId}-DST`,
             accountNumber: p.destinationAccountNumber || p.destinationAccountId,
-            entryType: 'CREDIT',
+            entryType: "CREDIT",
             amountMinor: p.amountMinor,
             currency: p.currency,
             balanceAfterMinor: 0,
@@ -179,15 +190,17 @@ export class LedgerService {
         { $match: filter },
         {
           $group: {
-            _id: '$entryType',
-            total: { $sum: '$amountMinor' },
+            _id: "$entryType",
+            total: { $sum: "$amountMinor" },
           },
         },
       ]),
     ]);
 
-    const creditTotal = aggregation.find((a: any) => a._id === 'CREDIT')?.total || 0;
-    const debitTotal = aggregation.find((a: any) => a._id === 'DEBIT')?.total || 0;
+    const creditTotal =
+      aggregation.find((a: any) => a._id === "CREDIT")?.total || 0;
+    const debitTotal =
+      aggregation.find((a: any) => a._id === "DEBIT")?.total || 0;
 
     return {
       data,
@@ -210,7 +223,9 @@ export class LedgerService {
   /**
    * Get all entries for a transaction (e.g. both legs of a transfer)
    */
-  async getEntriesByTransaction(transactionId: string): Promise<LedgerEntryDocument[]> {
+  async getEntriesByTransaction(
+    transactionId: string,
+  ): Promise<LedgerEntryDocument[]> {
     return this.ledgerModel
       .find({
         $or: [

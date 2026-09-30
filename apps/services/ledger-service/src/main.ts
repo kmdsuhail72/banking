@@ -1,16 +1,20 @@
-﻿import { startTelemetry, installMetrics, installTelemetryShutdown } from '@banking/observability';
-startTelemetry('ledger-service');
-import 'reflect-metadata';
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { join } from 'path';
-import { AppModule } from './app.module';
-import { createLogger } from '@banking/logger';
-import { DEFAULT_GRPC_PORTS, GRPC_PACKAGES } from '@banking/grpc';
+﻿import {
+  startTelemetry,
+  installMetrics,
+  installTelemetryShutdown,
+} from "@banking/observability";
+startTelemetry("ledger-service");
+import "reflect-metadata";
+import { NestFactory } from "@nestjs/core";
+import { ValidationPipe } from "@nestjs/common";
+import { MicroserviceOptions, Transport } from "@nestjs/microservices";
+import { join } from "path";
+import { AppModule } from "./app.module";
+import { createLogger } from "@banking/logger";
+import { DEFAULT_GRPC_PORTS, GRPC_PACKAGES } from "@banking/grpc";
 
 async function bootstrap() {
-  const logger = createLogger('LedgerService');
+  const logger = createLogger("LedgerService");
   const app = await NestFactory.create(AppModule);
 
   app.connectMicroservice<MicroserviceOptions>({
@@ -18,20 +22,25 @@ async function bootstrap() {
     options: {
       url: `0.0.0.0:${DEFAULT_GRPC_PORTS.LEDGER}`,
       package: GRPC_PACKAGES.LEDGER,
-      protoPath: join(__dirname, '../../../../packages/grpc/proto/ledger.proto'),
+      protoPath: join(
+        __dirname,
+        "../../../../packages/grpc/proto/ledger.proto",
+      ),
     },
   });
 
-  installMetrics(app, 'ledger-service');
+  installMetrics(app, "ledger-service");
   installTelemetryShutdown(app);
   app.enableCors({ origin: true, credentials: true });
-  app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
+  app.setGlobalPrefix("api/v1", { exclude: ["health", "health/(.*)"] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   await app.startAllMicroservices();
-  const port = parseInt(process.env.PORT || '4007', 10);
+  const port = parseInt(process.env.PORT || "4007", 10);
   await app.listen(port);
-  logger.info(`Ledger Service  HTTP :${port}  gRPC :${DEFAULT_GRPC_PORTS.LEDGER});
+  logger.info(
+    `Ledger Service  HTTP :${port}  gRPC :${DEFAULT_GRPC_PORTS.LEDGER}`,
+  );
 }
 
 bootstrap();

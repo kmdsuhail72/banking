@@ -1,6 +1,6 @@
-﻿import { Controller } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
-import { ComplianceService } from './compliance.service';
+﻿import { Controller } from "@nestjs/common";
+import { GrpcMethod } from "@nestjs/microservices";
+import { ComplianceService } from "./compliance.service";
 
 /** gRPC server-side controller for ComplianceService proto */
 @Controller()

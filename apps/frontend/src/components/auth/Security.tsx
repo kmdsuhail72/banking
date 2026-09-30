@@ -216,9 +216,7 @@ export function Mfa({ setup = false }: { setup?: boolean }) {
                   height={200}
                 />
               )}
-              <p className="auth-small">
-                Can’t scan? Enter this key manually:
-              </p>
+              <p className="auth-small">Can’t scan? Enter this key manually:</p>
               <code style={{ overflowWrap: "anywhere" }}>{secret}</code>
               <button
                 className="auth-button secondary"
@@ -391,8 +389,7 @@ export function Sessions() {
       </div>
       <h2>Your devices. Your control.</h2>
       <p className="auth-subtitle">
-        Review where you’re signed in and remove any device you don’t
-        recognize.
+        Review where you’re signed in and remove any device you don’t recognize.
       </p>
       {error && (
         <p className="auth-notice auth-error" role="alert">

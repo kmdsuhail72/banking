@@ -1,16 +1,20 @@
-﻿import { startTelemetry, installMetrics, installTelemetryShutdown } from '@banking/observability';
-startTelemetry('beneficiary-service');
-import 'reflect-metadata';
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { join } from 'path';
-import { AppModule } from './app.module';
-import { createLogger } from '@banking/logger';
-import { DEFAULT_GRPC_PORTS, GRPC_PACKAGES } from '@banking/grpc';
+﻿import {
+  startTelemetry,
+  installMetrics,
+  installTelemetryShutdown,
+} from "@banking/observability";
+startTelemetry("beneficiary-service");
+import "reflect-metadata";
+import { NestFactory } from "@nestjs/core";
+import { ValidationPipe } from "@nestjs/common";
+import { MicroserviceOptions, Transport } from "@nestjs/microservices";
+import { join } from "path";
+import { AppModule } from "./app.module";
+import { createLogger } from "@banking/logger";
+import { DEFAULT_GRPC_PORTS, GRPC_PACKAGES } from "@banking/grpc";
 
 async function bootstrap() {
-  const logger = createLogger('BeneficiaryService');
+  const logger = createLogger("BeneficiaryService");
   const app = await NestFactory.create(AppModule);
 
   app.connectMicroservice<MicroserviceOptions>({
@@ -18,20 +22,25 @@ async function bootstrap() {
     options: {
       url: `0.0.0.0:${DEFAULT_GRPC_PORTS.BENEFICIARY}`,
       package: GRPC_PACKAGES.BENEFICIARY,
-      protoPath: join(__dirname, '../../../../packages/grpc/proto/beneficiary.proto'),
+      protoPath: join(
+        __dirname,
+        "../../../../packages/grpc/proto/beneficiary.proto",
+      ),
     },
   });
 
-  installMetrics(app, 'beneficiary-service');
+  installMetrics(app, "beneficiary-service");
   installTelemetryShutdown(app);
   app.enableCors({ origin: true, credentials: true });
-  app.setGlobalPrefix('api/v1', { exclude: ['health', 'health/(.*)'] });
+  app.setGlobalPrefix("api/v1", { exclude: ["health", "health/(.*)"] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   await app.startAllMicroservices();
-  const port = parseInt(process.env.PORT || '4008', 10);
+  const port = parseInt(process.env.PORT || "4008", 10);
   await app.listen(port);
-  logger.info(`Beneficiary Service  HTTP :${port}  gRPC :${DEFAULT_GRPC_PORTS.BENEFICIARY});
+  logger.info(
+    `Beneficiary Service  HTTP :${port}  gRPC :${DEFAULT_GRPC_PORTS.BENEFICIARY}`,
+  );
 }
 
 bootstrap();

@@ -1,12 +1,18 @@
-import { IsInt, IsNotEmpty, IsOptional, IsPositive, IsString } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsPositive,
+  IsString,
+} from "class-validator";
 
 export class WithdrawDto {
   @IsString()
-  @IsNotEmpty({ message: 'accountId is required' })
+  @IsNotEmpty({ message: "accountId is required" })
   accountId: string;
 
-  @IsInt({ message: 'amountMinor must be an integer (in paise)' })
-  @IsPositive({ message: 'amountMinor must be greater than 0' })
+  @IsInt({ message: "amountMinor must be an integer (in paise)" })
+  @IsPositive({ message: "amountMinor must be greater than 0" })
   amountMinor: number;
 
   @IsOptional()

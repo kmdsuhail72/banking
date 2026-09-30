@@ -1,12 +1,12 @@
-﻿import { Controller, Get, UseGuards } from '@nestjs/common';
-import { StatementService } from './statement.service';
+﻿import { Controller, Get, UseGuards } from "@nestjs/common";
+import { StatementService } from "./statement.service";
 
-@Controller('statement')
+@Controller("statement")
 export class StatementController {
   constructor(private readonly service: StatementService) {}
 
   @Get()
   async findAll() {
-    return { message: 'Account statements (PDF/CSV) endpoint', data: [] };
+    return { message: "Account statements (PDF/CSV) endpoint", data: [] };
   }
 }

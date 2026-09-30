@@ -1,10 +1,9 @@
 const mongoose = require("mongoose");
 
 const transactionSchema = new mongoose.Schema({
-
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
+    ref: "User",
   },
 
   name: String,
@@ -15,9 +14,8 @@ const transactionSchema = new mongoose.Schema({
 
   date: {
     type: Date,
-    default: Date.now
-  }
-
+    default: Date.now,
+  },
 });
 
 module.exports = mongoose.model("Transaction", transactionSchema);

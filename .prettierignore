@@ -1,0 +1,26 @@
+# Dependencies & build outputs
+node_modules
+dist
+build
+.next
+out
+coverage
+.pnpm-store
+
+# Lock files
+pnpm-lock.yaml
+package-lock.json
+
+# Helm templates & Kubernetes Go-templated manifests & GitOps JSON-in-YAML
+helm/**/templates/**
+k8s/observability/configmaps.yaml
+gitops/**
+
+# Git & IDE
+.git
+.vscode
+.idea
+
+# Terraform
+**/.terraform/**
+*.tfstate*

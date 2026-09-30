@@ -1,11 +1,11 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { HydratedDocument } from "mongoose";
 
 export type IdempotencyDocument = HydratedDocument<IdempotencyKey>;
 
 @Schema({
   timestamps: true,
-  collection: 'idempotency_keys',
+  collection: "idempotency_keys",
 })
 export class IdempotencyKey {
   @Prop({
@@ -27,7 +27,7 @@ export class IdempotencyKey {
 
   @Prop({
     required: true,
-    default: 'COMPLETED',
+    default: "COMPLETED",
   })
   status: string;
 

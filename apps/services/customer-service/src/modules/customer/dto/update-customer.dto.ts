@@ -1,5 +1,5 @@
-import { IsOptional, IsString } from 'class-validator';
-import { UpdateCustomerDto, ICustomerAddress } from '@banking/shared-types';
+import { IsOptional, IsString } from "class-validator";
+import { UpdateCustomerDto, ICustomerAddress } from "@banking/shared-types";
 
 export class UpdateCustomerRequestDto implements UpdateCustomerDto {
   @IsString()

@@ -1,7 +1,7 @@
-﻿import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { LimitEntity } from '../../entities/limit.entity';
+﻿import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { LimitEntity } from "../../entities/limit.entity";
 
 /** Daily/monthly transaction limits */
 @Injectable()

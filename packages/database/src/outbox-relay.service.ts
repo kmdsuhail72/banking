@@ -1,11 +1,11 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, EntityTarget, DataSource } from 'typeorm';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { createLogger } from '@banking/logger';
-import { OutboxEntity } from './outbox.entity';
+import { Injectable, OnModuleInit } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, EntityTarget, DataSource } from "typeorm";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import { createLogger } from "@banking/logger";
+import { OutboxEntity } from "./outbox.entity";
 
-const logger = createLogger('OutboxRelayService');
+const logger = createLogger("OutboxRelayService");
 
 export interface IOutboxEventBus {
   publish(topic: string, event: Record<string, any>): Promise<void>;
@@ -31,18 +31,18 @@ export class OutboxRelayService implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    logger.info('OutboxRelayService initialized');
+    logger.info("OutboxRelayService initialized");
   }
 
-  @Cron('*/2 * * * * *') // every 2 seconds
+  @Cron("*/2 * * * * *") // every 2 seconds
   async relay(): Promise<void> {
     const repo = this.dataSource.getRepository(this.entityTarget);
 
     const rows = await repo.find({
       where: { published: false },
-      order: { createdAt: 'ASC' },
+      order: { createdAt: "ASC" },
       take: OutboxRelayService.BATCH_SIZE,
-      lock: { mode: 'pessimistic_write', onLocked: 'skip_locked' },
+      lock: { mode: "pessimistic_write", onLocked: "skip_locked" },
     });
 
     if (rows.length === 0) return;
@@ -67,15 +67,18 @@ export class OutboxRelayService implements OnModuleInit {
 
         await repo.update(row.id, {
           retries,
-          lastError: err?.message?.slice(0, 495) ?? 'unknown',
+          lastError: err?.message?.slice(0, 495) ?? "unknown",
           published: shouldGiveUp, // mark as published to stop infinite retry
         });
 
-        logger.warn(`Outbox relay failed for event ${row.id} (attempt ${retries})`, {
-          topic: row.topic,
-          error: err?.message,
-          gaveUp: shouldGiveUp,
-        });
+        logger.warn(
+          `Outbox relay failed for event ${row.id} (attempt ${retries})`,
+          {
+            topic: row.topic,
+            error: err?.message,
+            gaveUp: shouldGiveUp,
+          },
+        );
       }
     }
 

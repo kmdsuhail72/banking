@@ -1,4 +1,4 @@
-﻿# =============================================================================
+# =============================================================================
 # Banking Platform — GitHub Actions CI/CD Pipeline
 #
 # Authentication: GitHub OIDC → AWS IAM Role (no long-lived access keys)
@@ -43,19 +43,18 @@ concurrency:
 env:
   NODE_VERSION: "22"
   PNPM_VERSION: "11.24.0"
-  AWS_REGION:     ${{ vars.AWS_REGION || 'ap-south-1' }}
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-south-1' }}
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  ECR_REGISTRY:   "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION || 'ap-south-1' }}.amazonaws.com"
+  ECR_REGISTRY: "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION || 'ap-south-1' }}.amazonaws.com"
   ECR_REPOSITORY: banking
-  GHA_ROLE_ARN:   ${{ secrets.GITHUB_ACTIONS_ROLE_ARN }}
+  GHA_ROLE_ARN: ${{ secrets.GITHUB_ACTIONS_ROLE_ARN }}
   EKS_CLUSTER_PROD: ${{ vars.EKS_CLUSTER_PROD || 'banking-eks-production' }}
-  EKS_CLUSTER_STG:  ${{ vars.EKS_CLUSTER_STG  || 'banking-eks-staging'    }}
+  EKS_CLUSTER_STG: ${{ vars.EKS_CLUSTER_STG  || 'banking-eks-staging'    }}
   HELM_RELEASE: banking
-  HELM_CHART:   helm/banking-app
+  HELM_CHART: helm/banking-app
   SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
 
 jobs:
-
   # ---------------------------------------------------------------------------
   # STAGE 1 — Quality Gate: Prettier · ESLint · TypeScript typecheck
   # ---------------------------------------------------------------------------
@@ -82,7 +81,7 @@ jobs:
       - name: TypeScript — type-check all packages
         run: pnpm -r --if-present run typecheck
       - name: Notify Slack on failure
-        if: failure()
+        if: failure() && env.SLACK_WEBHOOK != ''
         uses: slackapi/slack-github-action@v1.27.0
         env:
           SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
@@ -102,8 +101,8 @@ jobs:
       postgres:
         image: postgres:17-alpine
         env:
-          POSTGRES_DB:       banking_test
-          POSTGRES_USER:     banking
+          POSTGRES_DB: banking_test
+          POSTGRES_USER: banking
           POSTGRES_PASSWORD: test-password-ci
         ports: ["5432:5432"]
         options: >-
@@ -122,15 +121,15 @@ jobs:
         image: apache/kafka:3.9.0
         ports: ["9092:9092"]
         env:
-          KAFKA_PROCESS_ROLES:                    broker,controller
-          KAFKA_NODE_ID:                          1
-          KAFKA_CONTROLLER_QUORUM_VOTERS:         "1@localhost:9093"
-          KAFKA_LISTENERS:                        PLAINTEXT://:9092,CONTROLLER://:9093
-          KAFKA_ADVERTISED_LISTENERS:             PLAINTEXT://localhost:9092
-          KAFKA_CONTROLLER_LISTENER_NAMES:        CONTROLLER
-          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP:   CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+          KAFKA_PROCESS_ROLES: broker,controller
+          KAFKA_NODE_ID: 1
+          KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:9093"
+          KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
           KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-          KAFKA_AUTO_CREATE_TOPICS_ENABLE:        "true"
+          KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -143,16 +142,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Run all test suites
         env:
-          DB_HOST:            localhost
-          DB_PORT:            5432
-          DB_NAME:            banking_test
-          DB_USER:            banking
-          DB_PASS:            test-password-ci
-          REDIS_HOST:         localhost
-          REDIS_PORT:         6379
-          KAFKA_BROKERS:      localhost:9092
-          NODE_ENV:           test
-          JWT_SECRET:         test-jwt-secret-for-ci-only
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: banking_test
+          DB_USER: banking
+          DB_PASS: test-password-ci
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          KAFKA_BROKERS: localhost:9092
+          NODE_ENV: test
+          JWT_SECRET: test-jwt-secret-for-ci-only
           JWT_REFRESH_SECRET: test-refresh-secret-for-ci-only
         run: pnpm -r --if-present run test -- --passWithNoTests --forceExit --coverage
       - name: Upload test coverage report
@@ -163,7 +162,7 @@ jobs:
           path: "**/coverage/"
           retention-days: 14
       - name: Notify Slack on failure
-        if: failure()
+        if: failure() && env.SLACK_WEBHOOK != ''
         uses: slackapi/slack-github-action@v1.27.0
         env:
           SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
@@ -245,7 +244,7 @@ jobs:
     needs: [quality, test, helm-lint]
     permissions:
       contents: read
-      id-token: write        # GitHub OIDC → AWS
+      id-token: write # GitHub OIDC → AWS
       security-events: write # Trivy SARIF upload
     strategy:
       fail-fast: false
@@ -253,45 +252,75 @@ jobs:
       matrix:
         service:
           # API Gateway
-          - { name: api-gateway,               context: apps/api-gateway }
+          - { name: api-gateway, context: apps/api-gateway }
           # Core Banking
-          - { name: auth-service,              context: apps/services/auth-service }
-          - { name: authz-service,             context: apps/services/authz-service }
-          - { name: customer-service,          context: apps/services/customer-service }
-          - { name: account-service,           context: apps/services/account-service }
-          - { name: transaction-service,       context: apps/services/transaction-service }
-          - { name: payment-service,           context: apps/services/payment-service }
-          - { name: wallet-service,            context: apps/services/wallet-service }
-          - { name: ledger-service,            context: apps/services/ledger-service }
+          - { name: auth-service, context: apps/services/auth-service }
+          - { name: authz-service, context: apps/services/authz-service }
+          - { name: customer-service, context: apps/services/customer-service }
+          - { name: account-service, context: apps/services/account-service }
+          - {
+              name: transaction-service,
+              context: apps/services/transaction-service,
+            }
+          - { name: payment-service, context: apps/services/payment-service }
+          - { name: wallet-service, context: apps/services/wallet-service }
+          - { name: ledger-service, context: apps/services/ledger-service }
           # Lending
-          - { name: loan-service,              context: apps/services/loan-service }
-          - { name: emi-service,               context: apps/services/emi-service }
-          - { name: fixed-deposit-service,     context: apps/services/fixed-deposit-service }
-          - { name: recurring-deposit-service, context: apps/services/recurring-deposit-service }
-          - { name: interest-service,          context: apps/services/interest-service }
+          - { name: loan-service, context: apps/services/loan-service }
+          - { name: emi-service, context: apps/services/emi-service }
+          - {
+              name: fixed-deposit-service,
+              context: apps/services/fixed-deposit-service,
+            }
+          - {
+              name: recurring-deposit-service,
+              context: apps/services/recurring-deposit-service,
+            }
+          - { name: interest-service, context: apps/services/interest-service }
           # Cards & Payments
-          - { name: card-service,              context: apps/services/card-service }
-          - { name: beneficiary-service,       context: apps/services/beneficiary-service }
-          - { name: fee-service,               context: apps/services/fee-service }
-          - { name: exchange-service,          context: apps/services/exchange-service }
+          - { name: card-service, context: apps/services/card-service }
+          - {
+              name: beneficiary-service,
+              context: apps/services/beneficiary-service,
+            }
+          - { name: fee-service, context: apps/services/fee-service }
+          - { name: exchange-service, context: apps/services/exchange-service }
           # Risk & Compliance
-          - { name: kyc-risk-service,          context: apps/services/kyc-risk-service }
-          - { name: fraud-service,             context: apps/services/fraud-service }
-          - { name: compliance-service,        context: apps/services/compliance-service }
-          - { name: audit-service,             context: apps/services/audit-service }
-          - { name: limit-service,             context: apps/services/limit-service }
+          - { name: kyc-risk-service, context: apps/services/kyc-risk-service }
+          - { name: fraud-service, context: apps/services/fraud-service }
+          - {
+              name: compliance-service,
+              context: apps/services/compliance-service,
+            }
+          - { name: audit-service, context: apps/services/audit-service }
+          - { name: limit-service, context: apps/services/limit-service }
           # Customer-facing & Support
-          - { name: notification-service,      context: apps/services/notification-service }
-          - { name: statement-service,         context: apps/services/statement-service }
-          - { name: document-service,          context: apps/services/document-service }
-          - { name: support-service,           context: apps/services/support-service }
-          - { name: admin-service,             context: apps/services/admin-service }
+          - {
+              name: notification-service,
+              context: apps/services/notification-service,
+            }
+          - {
+              name: statement-service,
+              context: apps/services/statement-service,
+            }
+          - { name: document-service, context: apps/services/document-service }
+          - { name: support-service, context: apps/services/support-service }
+          - { name: admin-service, context: apps/services/admin-service }
           # Data & Operations
-          - { name: reporting-service,         context: apps/services/reporting-service }
-          - { name: analytics-service,         context: apps/services/analytics-service }
-          - { name: scheduler-service,         context: apps/services/scheduler-service }
+          - {
+              name: reporting-service,
+              context: apps/services/reporting-service,
+            }
+          - {
+              name: analytics-service,
+              context: apps/services/analytics-service,
+            }
+          - {
+              name: scheduler-service,
+              context: apps/services/scheduler-service,
+            }
           # Frontend
-          - { name: frontend,                  context: apps/frontend }
+          - { name: frontend, context: apps/frontend }
     steps:
       - uses: actions/checkout@v4
 
@@ -306,8 +335,8 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume:    ${{ env.GHA_ROLE_ARN }}
-          aws-region:        ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.GHA_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
           role-session-name: gha-banking-${{ matrix.service.name }}-${{ github.run_number }}
 
       - name: Login to Amazon ECR
@@ -380,25 +409,25 @@ jobs:
       - name: Trivy vulnerability scan — ${{ matrix.service.name }}
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref:      "${{ env.IMAGE_FULL }}"
-          format:         sarif
-          output:         "trivy-${{ matrix.service.name }}.sarif"
-          severity:       HIGH,CRITICAL
-          exit-code:      "1"
+          image-ref: "${{ env.IMAGE_FULL }}"
+          format: sarif
+          output: "trivy-${{ matrix.service.name }}.sarif"
+          severity: HIGH,CRITICAL
+          exit-code: "1"
           ignore-unfixed: true
-          vuln-type:      "os,library"
-          scanners:       "vuln,secret,misconfig"
-          timeout:        "15m"
+          vuln-type: "os,library"
+          scanners: "vuln,secret,misconfig"
+          timeout: "15m"
 
       - name: Upload Trivy SARIF to GitHub Security tab
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "trivy-${{ matrix.service.name }}.sarif"
-          category:   "trivy-${{ matrix.service.name }}"
+          category: "trivy-${{ matrix.service.name }}"
 
       - name: Notify Slack — security scan blocked
-        if: failure()
+        if: failure() && env.SLACK_WEBHOOK != ''
         uses: slackapi/slack-github-action@v1.27.0
         env:
           SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
@@ -431,13 +460,13 @@ jobs:
     permissions:
       contents: write
     env:
-      TARGET_ENV:  ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      TARGET_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
       VALUES_FILE: ${{ github.ref == 'refs/heads/main' && 'helm/banking-app/values-production.yaml' || 'helm/banking-app/values-staging.yaml' }}
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref:   ${{ github.ref_name }}
+          ref: ${{ github.ref_name }}
       - name: Download all image tag artifacts
         uses: actions/download-artifact@v4
         with:
@@ -475,7 +504,7 @@ jobs:
       github.event_name == 'push' && github.ref == 'refs/heads/develop'
     environment:
       name: staging
-      url:  https://banking-staging.example.com
+      url: https://banking-staging.example.com
     permissions:
       contents: read
       id-token: write
@@ -484,8 +513,8 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume:    ${{ env.GHA_ROLE_ARN }}
-          aws-region:        ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.GHA_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
           role-session-name: gha-staging-deploy-${{ github.run_number }}
       - name: Update kubeconfig — staging EKS
         run: aws eks update-kubeconfig --region "${{ env.AWS_REGION }}" --name "${{ env.EKS_CLUSTER_STG }}" --alias staging
@@ -508,7 +537,7 @@ jobs:
           kubectl rollout status deployment --namespace banking --timeout=5m --context staging
           kubectl get pods --namespace banking --context staging
       - name: Notify Slack — staging deployed
-        if: success()
+        if: success() && env.SLACK_WEBHOOK != ''
         uses: slackapi/slack-github-action@v1.27.0
         env:
           SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
@@ -517,7 +546,7 @@ jobs:
           payload: |
             {"text":":white_check_mark: *Staging Deploy SUCCESS* — `${{ github.ref_name }}`","attachments":[{"color":"good","fields":[{"title":"Actor","value":"${{ github.actor }}","short":true},{"title":"URL","value":"https://banking-staging.example.com","short":false}]}]}
       - name: Notify Slack — staging FAILED
-        if: failure()
+        if: failure() && env.SLACK_WEBHOOK != ''
         uses: slackapi/slack-github-action@v1.27.0
         env:
           SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
@@ -539,7 +568,7 @@ jobs:
       github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
       name: production
-      url:  https://banking.example.com
+      url: https://banking.example.com
     permissions:
       contents: read
       id-token: write
@@ -548,8 +577,8 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume:    ${{ env.GHA_ROLE_ARN }}
-          aws-region:        ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.GHA_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
           role-session-name: gha-production-deploy-${{ github.run_number }}
       - name: Update kubeconfig — production EKS
         run: aws eks update-kubeconfig --region "${{ env.AWS_REGION }}" --name "${{ env.EKS_CLUSTER_PROD }}" --alias production
@@ -585,7 +614,7 @@ jobs:
             --namespace banking --wait --timeout 10m --kube-context production
           echo "Rollback complete."
       - name: Notify Slack — production deployed
-        if: success()
+        if: success() && env.SLACK_WEBHOOK != ''
         uses: slackapi/slack-github-action@v1.27.0
         env:
           SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
@@ -594,7 +623,7 @@ jobs:
           payload: |
             {"text":":rocket: *Production Deploy SUCCESS*","attachments":[{"color":"good","fields":[{"title":"Environment","value":"Production (AWS EKS)","short":true},{"title":"Actor","value":"${{ github.actor }}","short":true},{"title":"Image Tag","value":"sha-${{ github.sha }}","short":true},{"title":"URL","value":"https://banking.example.com","short":true},{"title":"Run","value":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}","short":false}]}]}
       - name: Notify Slack — production FAILED + rollback
-        if: failure()
+        if: failure() && env.SLACK_WEBHOOK != ''
         uses: slackapi/slack-github-action@v1.27.0
         env:
           SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
@@ -623,6 +652,7 @@ jobs:
           CHANGES=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges | head -30)
           { echo "changes<<EOF"; echo "$CHANGES"; echo "EOF"; } >> "$GITHUB_OUTPUT"
       - name: Notify Slack — new release
+        if: env.SLACK_WEBHOOK != ''
         uses: slackapi/slack-github-action@v1.27.0
         env:
           SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
@@ -634,12 +664,12 @@ jobs:
         uses: dawidd6/action-send-mail@v4
         with:
           server_address: smtp.gmail.com
-          server_port:    587
-          username:  ${{ secrets.SMTP_USERNAME }}
-          password:  ${{ secrets.SMTP_PASSWORD }}
-          subject:   "Banking Platform ${{ github.ref_name }} Released to Production"
-          to:        ${{ secrets.RELEASE_EMAIL_LIST }}
-          from:      "Banking CI/CD <noreply@banking.example.com>"
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Banking Platform ${{ github.ref_name }} Released to Production"
+          to: ${{ secrets.RELEASE_EMAIL_LIST }}
+          from: "Banking CI/CD <noreply@banking.example.com>"
           html_body: |
             <h2>Banking Platform ${{ github.ref_name }} Released to Production</h2>
             <table>

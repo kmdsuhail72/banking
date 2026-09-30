@@ -1,7 +1,18 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { api, setAccessToken, getAccessToken, refreshAccessToken } from '@/lib/api';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import {
+  api,
+  setAccessToken,
+  getAccessToken,
+  refreshAccessToken,
+} from "@/lib/api";
 import {
   AuthUserResponse,
   ICustomer,
@@ -12,7 +23,7 @@ import {
   LoginDto,
   UpdateCustomerDto,
   CreateAccountDto,
-} from '@banking/shared-types';
+} from "@banking/shared-types";
 
 interface AuthContextType {
   user: AuthUserResponse | null;
@@ -45,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchAccounts = useCallback(async (): Promise<IAccount[]> => {
     try {
-      const res = await api<{ accounts: IAccount[] }>('/api/v1/accounts');
+      const res = await api<{ accounts: IAccount[] }>("/api/v1/accounts");
       const list = res.accounts || [];
       setAccounts(list);
       return list;
@@ -57,7 +68,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchTransactions = useCallback(async (): Promise<ITransaction[]> => {
     try {
-      const res = await api<{ data: ITransaction[] }>('/api/v1/transactions?limit=10');
+      const res = await api<{ data: ITransaction[] }>(
+        "/api/v1/transactions?limit=10",
+      );
       const list = res.data || [];
       setTransactions(list);
       return list;
@@ -80,12 +93,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Fetch current authenticated user
-      const userData = await api<AuthUserResponse>('/api/v1/auth/me');
+      const userData = await api<AuthUserResponse>("/api/v1/auth/me");
       setUser(userData);
 
       // Fetch customer profile
       try {
-        const customerData = await api<ICustomer>('/api/v1/customers/me');
+        const customerData = await api<ICustomer>("/api/v1/customers/me");
         setCustomer(customerData);
       } catch {
         setCustomer(null);
@@ -106,7 +119,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     void (async () => {
-      try { if (!getAccessToken()) await refreshAccessToken(); } catch { /* No active session. */ }
+      try {
+        if (!getAccessToken()) await refreshAccessToken();
+      } catch {
+        /* No active session. */
+      }
       await fetchProfile();
     })();
     const expired = () => {
@@ -114,19 +131,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCustomer(null);
       setAccounts([]);
       setTransactions([]);
-      if (window.location.pathname.startsWith('/dashboard') || window.location.pathname === '/profile') {
-        window.location.assign(`/auth/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      if (
+        window.location.pathname.startsWith("/dashboard") ||
+        window.location.pathname === "/profile"
+      ) {
+        window.location.assign(
+          `/auth/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`,
+        );
       }
     };
-    window.addEventListener('auth:expired', expired);
-    return () => window.removeEventListener('auth:expired', expired);
+    window.addEventListener("auth:expired", expired);
+    return () => window.removeEventListener("auth:expired", expired);
   }, [fetchProfile]);
 
   const login = async (dto: LoginDto) => {
     setIsLoading(true);
     try {
-      const res = await api<any>('/api/v1/auth/login', {
-        method: 'POST',
+      const res = await api<any>("/api/v1/auth/login", {
+        method: "POST",
         body: JSON.stringify(dto),
       });
 
@@ -138,7 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Fetch customer profile after login
       try {
-        const customerData = await api<ICustomer>('/api/v1/customers/me');
+        const customerData = await api<ICustomer>("/api/v1/customers/me");
         setCustomer(customerData);
       } catch {
         setCustomer(null);
@@ -151,15 +173,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (dto: RegisterDto) => {
-    return api<any>('/api/v1/auth/register', {
-      method: 'POST',
+    return api<any>("/api/v1/auth/register", {
+      method: "POST",
       body: JSON.stringify(dto),
     });
   };
 
   const logout = async () => {
     try {
-      await api('/api/v1/auth/logout', { method: 'POST' });
+      await api("/api/v1/auth/logout", { method: "POST" });
     } catch {
       // ignore
     } finally {
@@ -172,21 +194,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const createAccount = async (dto: CreateAccountDto): Promise<IAccount> => {
-    const newAccount = await api<IAccount>('/api/v1/accounts', {
-      method: 'POST',
+    const newAccount = await api<IAccount>("/api/v1/accounts", {
+      method: "POST",
       body: JSON.stringify(dto),
     });
     await fetchAccounts();
     return newAccount;
   };
 
-  const updateCustomerProfile = async (dto: UpdateCustomerDto): Promise<ICustomer> => {
+  const updateCustomerProfile = async (
+    dto: UpdateCustomerDto,
+  ): Promise<ICustomer> => {
     if (!customer?.id && !user?.id) {
-      throw new Error('Not authenticated');
+      throw new Error("Not authenticated");
     }
     const identifier = customer?.id || customer?.userId || user?.id;
     const updated = await api<ICustomer>(`/api/v1/customers/${identifier}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify(dto),
     });
     setCustomer(updated);
@@ -194,13 +218,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const totalBalanceMinor = accounts
-    .filter((a) => a.status === 'ACTIVE')
+    .filter((a) => a.status === "ACTIVE")
     .reduce((sum, a) => sum + (a.balanceMinor || 0), 0);
 
-  const isDemoMode = typeof window !== 'undefined' && getAccessToken() === '__demo__';
+  const isDemoMode =
+    typeof window !== "undefined" && getAccessToken() === "__demo__";
 
   const enterDemoMode = () => {
-    setAccessToken('__demo__');
+    setAccessToken("__demo__");
     setIsLoading(true);
     fetchProfile();
   };
@@ -231,7 +256,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

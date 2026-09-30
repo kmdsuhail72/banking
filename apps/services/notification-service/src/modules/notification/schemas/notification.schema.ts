@@ -1,14 +1,14 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document } from "mongoose";
 
 export type NotificationDocument = Notification & Document;
 
 export enum NotificationTypeEnum {
-  TRANSACTION = 'TRANSACTION',
-  ACCOUNT = 'ACCOUNT',
-  PAYMENT = 'PAYMENT',
-  SECURITY = 'SECURITY',
-  SYSTEM = 'SYSTEM',
+  TRANSACTION = "TRANSACTION",
+  ACCOUNT = "ACCOUNT",
+  PAYMENT = "PAYMENT",
+  SECURITY = "SECURITY",
+  SYSTEM = "SYSTEM",
 }
 
 @Schema({ timestamps: true })

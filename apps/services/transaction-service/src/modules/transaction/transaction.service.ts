@@ -4,16 +4,16 @@ import {
   NotFoundException,
   ForbiddenException,
   InternalServerErrorException,
-} from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, isValidObjectId } from 'mongoose';
-import { Transaction, TransactionDocument } from './schemas/transaction.schema';
-import { DepositDto } from './dto/deposit.dto';
-import { WithdrawDto } from './dto/withdraw.dto';
-import { TransferDto } from './dto/transfer.dto';
-import { QueryTransactionsDto } from './dto/query-transactions.dto';
-import { IdempotencyService } from './services/idempotency.service';
-import { OutboxService } from './services/outbox.service';
+} from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model, isValidObjectId } from "mongoose";
+import { Transaction, TransactionDocument } from "./schemas/transaction.schema";
+import { DepositDto } from "./dto/deposit.dto";
+import { WithdrawDto } from "./dto/withdraw.dto";
+import { TransferDto } from "./dto/transfer.dto";
+import { QueryTransactionsDto } from "./dto/query-transactions.dto";
+import { IdempotencyService } from "./services/idempotency.service";
+import { OutboxService } from "./services/outbox.service";
 import {
   TransactionType,
   TransactionStatus,
@@ -21,15 +21,15 @@ import {
   IMoneyDepositedPayload,
   IMoneyWithdrawnPayload,
   IMoneyTransferredPayload,
-} from '@banking/shared-types';
-import { appConfig } from '@banking/config';
-import { createLogger } from '@banking/logger';
-import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
+} from "@banking/shared-types";
+import { appConfig } from "@banking/config";
+import { createLogger } from "@banking/logger";
+import { v4 as uuidv4 } from "uuid";
+import axios from "axios";
 
 @Injectable()
 export class TransactionService {
-  private logger = createLogger('TransactionService');
+  private logger = createLogger("TransactionService");
   private accountServiceBaseUrl = `http://localhost:${appConfig.ports.account || 4003}/api/v1/accounts`;
 
   constructor(
@@ -40,7 +40,7 @@ export class TransactionService {
   ) {}
 
   private generateTransactionId(): string {
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const randomHex = uuidv4().substring(0, 8).toUpperCase();
     return `TXN-${dateStr}-${randomHex}`;
   }
@@ -51,7 +51,7 @@ export class TransactionService {
   private async mutateAccountBalance(
     accountId: string,
     amountMinor: number,
-    operation: 'CREDIT' | 'DEBIT',
+    operation: "CREDIT" | "DEBIT",
     description?: string,
     transactionId?: string,
   ): Promise<any> {
@@ -71,15 +71,20 @@ export class TransactionService {
     } catch (err: any) {
       const errResponse = err.response?.data;
       const status = err.response?.status || 500;
-      const msg = errResponse?.message || err.message || 'Balance mutation failed';
+      const msg =
+        errResponse?.message || err.message || "Balance mutation failed";
 
       if (status === 404) {
         throw new NotFoundException(`Account '${accountId}' not found`);
       }
       if (status === 400) {
-        throw new BadRequestException(errResponse || { code: 'BAD_REQUEST', message: msg });
+        throw new BadRequestException(
+          errResponse || { code: "BAD_REQUEST", message: msg },
+        );
       }
-      throw new InternalServerErrorException(`Account service communication error: ${msg}`);
+      throw new InternalServerErrorException(
+        `Account service communication error: ${msg}`,
+      );
     }
   }
 
@@ -98,7 +103,8 @@ export class TransactionService {
         throw new NotFoundException(`Account '${accountIdOrNumber}' not found`);
       }
       throw new BadRequestException(
-        err.response?.data?.message || `Could not retrieve account '${accountIdOrNumber}'`,
+        err.response?.data?.message ||
+          `Could not retrieve account '${accountIdOrNumber}'`,
       );
     }
   }
@@ -126,8 +132,8 @@ export class TransactionService {
       accountId: dto.accountId,
       type: TransactionType.DEPOSIT,
       amountMinor: dto.amountMinor,
-      currency: 'INR',
-      description: dto.description || 'Cash / Online Deposit',
+      currency: "INR",
+      description: dto.description || "Cash / Online Deposit",
       status: TransactionStatus.PENDING,
       idempotencyKey: key,
     });
@@ -137,7 +143,7 @@ export class TransactionService {
       const updatedAccount = await this.mutateAccountBalance(
         dto.accountId,
         dto.amountMinor,
-        'CREDIT',
+        "CREDIT",
         dto.description,
         transactionId,
       );
@@ -147,7 +153,9 @@ export class TransactionService {
       transaction.accountId = updatedAccount.accountNumber || dto.accountId;
       await transaction.save();
 
-      this.logger.info(`Deposit completed: ${transactionId} -> ${dto.amountMinor} paise`);
+      this.logger.info(
+        `Deposit completed: ${transactionId} -> ${dto.amountMinor} paise`,
+      );
 
       // 5. Outbox Event & Kafka dispatch
       const eventPayload: IMoneyDepositedPayload = {
@@ -156,24 +164,29 @@ export class TransactionService {
         accountNumber: updatedAccount.accountNumber,
         userId,
         amountMinor: dto.amountMinor,
-        currency: 'INR',
+        currency: "INR",
         occurredAt: new Date().toISOString(),
       };
 
       await this.outboxService.saveAndPublishEvent(
         KafkaTopics.MONEY_DEPOSITED,
-        'MoneyDeposited',
+        "MoneyDeposited",
         transactionId,
         eventPayload,
       );
 
       // 6. Store Idempotency Response
-      await this.idempotencyService.storeResponse(userId, key, transactionId, transaction);
+      await this.idempotencyService.storeResponse(
+        userId,
+        key,
+        transactionId,
+        transaction,
+      );
 
       return transaction;
     } catch (err: any) {
       transaction.status = TransactionStatus.FAILED;
-      transaction.failureReason = err.message || 'Deposit processing failed';
+      transaction.failureReason = err.message || "Deposit processing failed";
       await transaction.save();
       throw err;
     }
@@ -196,7 +209,9 @@ export class TransactionService {
     // 2. Verify account ownership
     const account = await this.fetchAccount(dto.accountId);
     if (account.userId && account.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to withdraw from this account');
+      throw new ForbiddenException(
+        "You do not have permission to withdraw from this account",
+      );
     }
 
     const transactionId = this.generateTransactionId();
@@ -208,8 +223,8 @@ export class TransactionService {
       accountId: account.accountNumber || dto.accountId,
       type: TransactionType.WITHDRAWAL,
       amountMinor: dto.amountMinor,
-      currency: 'INR',
-      description: dto.description || 'ATM / Cash Withdrawal',
+      currency: "INR",
+      description: dto.description || "ATM / Cash Withdrawal",
       status: TransactionStatus.PENDING,
       idempotencyKey: key,
     });
@@ -219,7 +234,7 @@ export class TransactionService {
       const updatedAccount = await this.mutateAccountBalance(
         dto.accountId,
         dto.amountMinor,
-        'DEBIT',
+        "DEBIT",
         dto.description,
         transactionId,
       );
@@ -228,7 +243,9 @@ export class TransactionService {
       transaction.status = TransactionStatus.COMPLETED;
       await transaction.save();
 
-      this.logger.info(`Withdrawal completed: ${transactionId} -> ${dto.amountMinor} paise`);
+      this.logger.info(
+        `Withdrawal completed: ${transactionId} -> ${dto.amountMinor} paise`,
+      );
 
       // 6. Outbox Event & Kafka dispatch
       const eventPayload: IMoneyWithdrawnPayload = {
@@ -237,24 +254,29 @@ export class TransactionService {
         accountNumber: updatedAccount.accountNumber,
         userId,
         amountMinor: dto.amountMinor,
-        currency: 'INR',
+        currency: "INR",
         occurredAt: new Date().toISOString(),
       };
 
       await this.outboxService.saveAndPublishEvent(
         KafkaTopics.MONEY_WITHDRAWN,
-        'MoneyWithdrawn',
+        "MoneyWithdrawn",
         transactionId,
         eventPayload,
       );
 
       // 7. Store Idempotency Response
-      await this.idempotencyService.storeResponse(userId, key, transactionId, transaction);
+      await this.idempotencyService.storeResponse(
+        userId,
+        key,
+        transactionId,
+        transaction,
+      );
 
       return transaction;
     } catch (err: any) {
       transaction.status = TransactionStatus.FAILED;
-      transaction.failureReason = err.message || 'Withdrawal processing failed';
+      transaction.failureReason = err.message || "Withdrawal processing failed";
       await transaction.save();
       throw err;
     }
@@ -280,15 +302,17 @@ export class TransactionService {
       dto.destinationAccountId.trim().toUpperCase()
     ) {
       throw new BadRequestException({
-        code: 'INVALID_TRANSFER',
-        message: 'Source and destination accounts must be different',
+        code: "INVALID_TRANSFER",
+        message: "Source and destination accounts must be different",
       });
     }
 
     // 3. Verify source account ownership
     const sourceAccount = await this.fetchAccount(dto.sourceAccountId);
     if (sourceAccount.userId && sourceAccount.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to transfer from this source account');
+      throw new ForbiddenException(
+        "You do not have permission to transfer from this source account",
+      );
     }
 
     // 4. Verify destination account exists
@@ -301,11 +325,13 @@ export class TransactionService {
       transactionId,
       userId,
       accountId: sourceAccount.accountNumber || dto.sourceAccountId,
-      destinationAccountId: destAccount.accountNumber || dto.destinationAccountId,
+      destinationAccountId:
+        destAccount.accountNumber || dto.destinationAccountId,
       type: TransactionType.TRANSFER,
       amountMinor: dto.amountMinor,
-      currency: 'INR',
-      description: dto.description || `Transfer to ${destAccount.accountNumber}`,
+      currency: "INR",
+      description:
+        dto.description || `Transfer to ${destAccount.accountNumber}`,
       status: TransactionStatus.PENDING,
       idempotencyKey: key,
     });
@@ -315,7 +341,7 @@ export class TransactionService {
       await this.mutateAccountBalance(
         dto.sourceAccountId,
         dto.amountMinor,
-        'DEBIT',
+        "DEBIT",
         `Transfer to ${destAccount.accountNumber}`,
         transactionId,
       );
@@ -325,7 +351,7 @@ export class TransactionService {
         await this.mutateAccountBalance(
           dto.destinationAccountId,
           dto.amountMinor,
-          'CREDIT',
+          "CREDIT",
           `Transfer from ${sourceAccount.accountNumber}`,
           transactionId,
         );
@@ -337,7 +363,7 @@ export class TransactionService {
         await this.mutateAccountBalance(
           dto.sourceAccountId,
           dto.amountMinor,
-          'CREDIT',
+          "CREDIT",
           `Rollback: Transfer ${transactionId} failed`,
           transactionId,
         );
@@ -361,24 +387,29 @@ export class TransactionService {
         destinationAccountNumber: destAccount.accountNumber,
         userId,
         amountMinor: dto.amountMinor,
-        currency: 'INR',
+        currency: "INR",
         occurredAt: new Date().toISOString(),
       };
 
       await this.outboxService.saveAndPublishEvent(
         KafkaTopics.MONEY_TRANSFERRED,
-        'MoneyTransferred',
+        "MoneyTransferred",
         transactionId,
         eventPayload,
       );
 
       // 10. Store Idempotency Response
-      await this.idempotencyService.storeResponse(userId, key, transactionId, transaction);
+      await this.idempotencyService.storeResponse(
+        userId,
+        key,
+        transactionId,
+        transaction,
+      );
 
       return transaction;
     } catch (err: any) {
       transaction.status = TransactionStatus.FAILED;
-      transaction.failureReason = err.message || 'Transfer processing failed';
+      transaction.failureReason = err.message || "Transfer processing failed";
       await transaction.save();
       throw err;
     }
@@ -454,7 +485,9 @@ export class TransactionService {
     }
 
     if (userId && transaction.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to view this transaction');
+      throw new ForbiddenException(
+        "You do not have permission to view this transaction",
+      );
     }
 
     return transaction;

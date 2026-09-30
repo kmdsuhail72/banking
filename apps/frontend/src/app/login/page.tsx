@@ -1,27 +1,27 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { 
-  Zap, 
-  Lock, 
-  Mail, 
-  Eye, 
-  EyeOff, 
-  ArrowRight, 
-  ShieldCheck, 
+import React, { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import {
+  Zap,
+  Lock,
+  Mail,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  ShieldCheck,
   AlertCircle,
-  CheckCircle2
-} from 'lucide-react';
+  CheckCircle2,
+} from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, enterDemoMode } = useAuth();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +29,7 @@ export default function LoginPage() {
 
   const handleLaunchDemo = () => {
     enterDemoMode();
-    router.push('/dashboard');
+    router.push("/dashboard");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,16 +37,16 @@ export default function LoginPage() {
     setError(null);
 
     if (!email || !password) {
-      setError('Please enter both email and password.');
+      setError("Please enter both email and password.");
       return;
     }
 
     setIsSubmitting(true);
     try {
       await login({ email, password });
-      router.push('/dashboard');
+      router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message || 'Invalid email or password. Please try again.');
+      setError(err.message || "Invalid email or password. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -68,7 +68,10 @@ export default function LoginPage() {
               </div>
             </div>
             <span className="text-2xl font-black tracking-tight text-white">
-              Nova<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Bank</span>
+              Nova
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
+                Bank
+              </span>
             </span>
           </Link>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white pt-2">
@@ -89,12 +92,18 @@ export default function LoginPage() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
-                <span className="text-xs font-bold text-emerald-400 tracking-wide uppercase">Live Demo Ready</span>
+                <span className="text-xs font-bold text-emerald-400 tracking-wide uppercase">
+                  Live Demo Ready
+                </span>
               </div>
-              <span className="text-[11px] font-semibold text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-700">Preloaded Data</span>
+              <span className="text-[11px] font-semibold text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-700">
+                Preloaded Data
+              </span>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Explore the full banking dashboard preloaded with 3 active accounts (Savings, Current, Salary), ₹22.3L balance, and 20 recent transactions.
+              Explore the full banking dashboard preloaded with 3 active
+              accounts (Savings, Current, Salary), ₹22.3L balance, and 20 recent
+              transactions.
             </p>
             <button
               id="launch-demo-btn"
@@ -110,7 +119,9 @@ export default function LoginPage() {
 
           <div className="relative flex py-1 items-center">
             <div className="flex-grow border-t border-white/10"></div>
-            <span className="flex-shrink mx-3 text-[11px] uppercase tracking-wider text-slate-500 font-medium">Or Sign In with Credentials</span>
+            <span className="flex-shrink mx-3 text-[11px] uppercase tracking-wider text-slate-500 font-medium">
+              Or Sign In with Credentials
+            </span>
             <div className="flex-grow border-t border-white/10"></div>
           </div>
 
@@ -162,7 +173,7 @@ export default function LoginPage() {
                 </div>
                 <input
                   id="login-password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   required
                   placeholder="Enter your password"
                   value={password}
@@ -217,7 +228,7 @@ export default function LoginPage() {
           {/* Footer separator */}
           <div className="pt-4 border-t border-white/10 text-center">
             <p className="text-xs text-slate-400">
-              Don&apos;t have an account?{' '}
+              Don&apos;t have an account?{" "}
               <Link
                 href="/register"
                 className="text-indigo-400 hover:text-indigo-300 font-semibold transition"
@@ -231,7 +242,9 @@ export default function LoginPage() {
         {/* Security badge */}
         <div className="flex items-center justify-center space-x-2 text-[11px] text-slate-500">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Argon2 Encrypted • 256-bit JWT Session • PCI-DSS Compliant</span>
+          <span>
+            Argon2 Encrypted • 256-bit JWT Session • PCI-DSS Compliant
+          </span>
         </div>
       </div>
     </main>

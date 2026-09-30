@@ -1,7 +1,7 @@
-﻿import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { ComplianceEntity } from '../../entities/compliance.entity';
+﻿import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { ComplianceEntity } from "../../entities/compliance.entity";
 
 /** AML checks and regulatory reporting */
 @Injectable()

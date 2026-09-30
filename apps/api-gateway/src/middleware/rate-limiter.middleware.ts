@@ -1,5 +1,5 @@
-import { Injectable, NestMiddleware, HttpStatus } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+import { Injectable, NestMiddleware, HttpStatus } from "@nestjs/common";
+import { Request, Response, NextFunction } from "express";
 
 interface RateLimitRecord {
   count: number;
@@ -13,7 +13,7 @@ export class RateLimiterMiddleware implements NestMiddleware {
   private readonly windowMs = 60 * 1000; // 1 minute
 
   use(req: Request, res: Response, next: NextFunction) {
-    const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
+    const ip = req.ip || req.socket.remoteAddress || "127.0.0.1";
     const now = Date.now();
 
     let record = this.ipMap.get(ip);
@@ -30,14 +30,14 @@ export class RateLimiterMiddleware implements NestMiddleware {
     const remaining = Math.max(0, this.limit - record.count);
     const resetSeconds = Math.ceil((record.resetTime - now) / 1000);
 
-    res.setHeader('X-RateLimit-Limit', this.limit);
-    res.setHeader('X-RateLimit-Remaining', remaining);
-    res.setHeader('X-RateLimit-Reset', resetSeconds);
+    res.setHeader("X-RateLimit-Limit", this.limit);
+    res.setHeader("X-RateLimit-Remaining", remaining);
+    res.setHeader("X-RateLimit-Reset", resetSeconds);
 
     if (record.count > this.limit) {
       return res.status(HttpStatus.TOO_MANY_REQUESTS).json({
         statusCode: HttpStatus.TOO_MANY_REQUESTS,
-        message: 'Too many requests. Please try again later.',
+        message: "Too many requests. Please try again later.",
         retryAfter: resetSeconds,
       });
     }

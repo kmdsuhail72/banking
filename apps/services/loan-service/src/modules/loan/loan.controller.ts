@@ -1,12 +1,12 @@
-﻿import { Controller, Get, UseGuards } from '@nestjs/common';
-import { LoanService } from './loan.service';
+﻿import { Controller, Get, UseGuards } from "@nestjs/common";
+import { LoanService } from "./loan.service";
 
-@Controller('loan')
+@Controller("loan")
 export class LoanController {
   constructor(private readonly service: LoanService) {}
 
   @Get()
   async findAll() {
-    return { message: 'Loan origination and management endpoint', data: [] };
+    return { message: "Loan origination and management endpoint", data: [] };
   }
 }

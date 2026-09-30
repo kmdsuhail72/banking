@@ -1,7 +1,7 @@
-﻿import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@banking/database';
-import { HealthModule } from './health/health.module';
-import { NotifOutboxEntity } from './entities/notif-outbox.entity';
+﻿import { Module } from "@nestjs/common";
+import { DatabaseModule } from "@banking/database";
+import { HealthModule } from "./health/health.module";
+import { NotifOutboxEntity } from "./entities/notif-outbox.entity";
 
 @Module({
   imports: [

@@ -1,6 +1,6 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { Type } from 'class-transformer';
-import { TransactionType, TransactionStatus } from '@banking/shared-types';
+import { IsEnum, IsOptional, IsString } from "class-validator";
+import { Type } from "class-transformer";
+import { TransactionType, TransactionStatus } from "@banking/shared-types";
 
 export class QueryTransactionsDto {
   @IsOptional()

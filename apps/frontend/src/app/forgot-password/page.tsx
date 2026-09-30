@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { api } from '@/lib/api';
-import { 
-  Zap, 
-  Mail, 
-  ArrowLeft, 
-  ArrowRight, 
-  CheckCircle2, 
+import React, { useState } from "react";
+import Link from "next/link";
+import { api } from "@/lib/api";
+import {
+  Zap,
+  Mail,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
   AlertCircle,
-  KeyRound
-} from 'lucide-react';
+  KeyRound,
+} from "lucide-react";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [resetToken, setResetToken] = useState<string | null>(null);
@@ -25,14 +25,14 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     if (!email) {
-      setError('Please enter your email address.');
+      setError("Please enter your email address.");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const res = await api<any>('/api/v1/auth/forgot-password', {
-        method: 'POST',
+      const res = await api<any>("/api/v1/auth/forgot-password", {
+        method: "POST",
         body: JSON.stringify({ email: email.trim() }),
       });
 
@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
         setResetToken(res.resetToken);
       }
     } catch (err: any) {
-      setError(err.message || 'Unable to process password reset request.');
+      setError(err.message || "Unable to process password reset request.");
     } finally {
       setIsSubmitting(false);
     }
@@ -61,7 +61,10 @@ export default function ForgotPasswordPage() {
               </div>
             </div>
             <span className="text-2xl font-black tracking-tight text-white">
-              Nova<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Bank</span>
+              Nova
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
+                Bank
+              </span>
             </span>
           </Link>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white pt-2">
@@ -78,9 +81,13 @@ export default function ForgotPasswordPage() {
               <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-start space-x-3 text-xs">
                 <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-semibold text-sm">Recovery instructions sent</p>
+                  <p className="font-semibold text-sm">
+                    Recovery instructions sent
+                  </p>
                   <p className="text-slate-400 mt-1">
-                    If an account with <strong className="text-white">{email}</strong> exists, you will receive password reset instructions shortly.
+                    If an account with{" "}
+                    <strong className="text-white">{email}</strong> exists, you
+                    will receive password reset instructions shortly.
                   </p>
                 </div>
               </div>
@@ -95,7 +102,8 @@ export default function ForgotPasswordPage() {
                     href={`/reset-password?token=${resetToken}`}
                     className="block p-2 rounded bg-indigo-500/20 text-indigo-300 hover:text-white font-mono break-all text-[11px] underline"
                   >
-                    Click to Reset: /reset-password?token={resetToken.substring(0, 16)}...
+                    Click to Reset: /reset-password?token=
+                    {resetToken.substring(0, 16)}...
                   </Link>
                 </div>
               )}

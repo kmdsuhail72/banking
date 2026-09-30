@@ -1,76 +1,76 @@
 // Banking Domain Enums
 export enum UserRole {
-  CUSTOMER = 'CUSTOMER',
-  ADMIN = 'ADMIN',
-  SUPPORT = 'SUPPORT',
-  COMPLIANCE = 'COMPLIANCE',
+  CUSTOMER = "CUSTOMER",
+  ADMIN = "ADMIN",
+  SUPPORT = "SUPPORT",
+  COMPLIANCE = "COMPLIANCE",
 }
 
 export enum UserStatus {
-  ACTIVE = 'ACTIVE',
-  PENDING = 'PENDING',
-  SUSPENDED = 'SUSPENDED',
+  ACTIVE = "ACTIVE",
+  PENDING = "PENDING",
+  SUSPENDED = "SUSPENDED",
 }
 
 export enum AccountType {
-  SAVINGS = 'SAVINGS',
-  CURRENT = 'CURRENT',
-  SALARY = 'SALARY',
+  SAVINGS = "SAVINGS",
+  CURRENT = "CURRENT",
+  SALARY = "SALARY",
 }
 
 export enum AccountStatus {
-  ACTIVE = 'ACTIVE',
-  BLOCKED = 'BLOCKED',
-  CLOSED = 'CLOSED',
-  PENDING = 'PENDING',
+  ACTIVE = "ACTIVE",
+  BLOCKED = "BLOCKED",
+  CLOSED = "CLOSED",
+  PENDING = "PENDING",
 }
 
 export enum TransactionType {
-  DEPOSIT = 'DEPOSIT',
-  WITHDRAWAL = 'WITHDRAWAL',
-  TRANSFER = 'TRANSFER',
+  DEPOSIT = "DEPOSIT",
+  WITHDRAWAL = "WITHDRAWAL",
+  TRANSFER = "TRANSFER",
 }
 
 export enum TransactionStatus {
-  PENDING = 'PENDING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED',
+  PENDING = "PENDING",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
 }
 
 export enum KycStatus {
-  PENDING = 'PENDING',
-  IN_REVIEW = 'IN_REVIEW',
-  VERIFIED = 'VERIFIED',
-  REJECTED = 'REJECTED',
+  PENDING = "PENDING",
+  IN_REVIEW = "IN_REVIEW",
+  VERIFIED = "VERIFIED",
+  REJECTED = "REJECTED",
 }
 
 export enum PaymentMethod {
-  UPI = 'UPI',
-  NEFT = 'NEFT',
-  RTGS = 'RTGS',
-  IMPS = 'IMPS',
-  CARD = 'CARD',
-  WALLET = 'WALLET',
+  UPI = "UPI",
+  NEFT = "NEFT",
+  RTGS = "RTGS",
+  IMPS = "IMPS",
+  CARD = "CARD",
+  WALLET = "WALLET",
 }
 
 export enum KafkaTopics {
-  USER_REGISTERED = 'user.registered',
-  CUSTOMER_CREATED = 'customer.created',
-  ACCOUNT_CREATED = 'account.created',
-  ACCOUNT_CLOSED = 'account.closed',
-  MONEY_DEPOSITED = 'money.deposited',
-  MONEY_WITHDRAWN = 'money.withdrawn',
-  MONEY_TRANSFERRED = 'money.transferred',
-  TRANSACTION_COMPLETED = 'transaction.completed',
-  TRANSACTION_FAILED = 'transaction.failed',
-  BENEFICIARY_ADDED = 'beneficiary.added',
-  BENEFICIARY_REMOVED = 'beneficiary.removed',
-  WALLET_CREDITED = 'wallet.credited',
-  WALLET_DEBITED = 'wallet.debited',
-  PAYMENT_INITIATED = 'payment.initiated',
-  PAYMENT_COMPLETED = 'payment.completed',
-  PAYMENT_FAILED = 'payment.failed',
-  NOTIFICATION_CREATED = 'notification.created',
+  USER_REGISTERED = "user.registered",
+  CUSTOMER_CREATED = "customer.created",
+  ACCOUNT_CREATED = "account.created",
+  ACCOUNT_CLOSED = "account.closed",
+  MONEY_DEPOSITED = "money.deposited",
+  MONEY_WITHDRAWN = "money.withdrawn",
+  MONEY_TRANSFERRED = "money.transferred",
+  TRANSACTION_COMPLETED = "transaction.completed",
+  TRANSACTION_FAILED = "transaction.failed",
+  BENEFICIARY_ADDED = "beneficiary.added",
+  BENEFICIARY_REMOVED = "beneficiary.removed",
+  WALLET_CREDITED = "wallet.credited",
+  WALLET_DEBITED = "wallet.debited",
+  PAYMENT_INITIATED = "payment.initiated",
+  PAYMENT_COMPLETED = "payment.completed",
+  PAYMENT_FAILED = "payment.failed",
+  NOTIFICATION_CREATED = "notification.created",
 }
 
 // Domain Interfaces
@@ -141,7 +141,7 @@ export interface ILedgerEntry {
   id: string;
   transactionId: string;
   accountNumber: string;
-  entryType: 'DEBIT' | 'CREDIT';
+  entryType: "DEBIT" | "CREDIT";
   amount: number;
   currency: string;
   balanceAfter: number;
@@ -150,15 +150,15 @@ export interface ILedgerEntry {
 
 // Microservice Health Response
 export interface IServiceHealth {
-  status: 'ok' | 'error';
+  status: "ok" | "error";
   service: string;
   version: string;
   timestamp: string;
   uptimeSeconds: number;
   dependencies?: {
-    mongodb?: 'connected' | 'disconnected';
-    redis?: 'connected' | 'disconnected';
-    kafka?: 'connected' | 'disconnected';
+    mongodb?: "connected" | "disconnected";
+    redis?: "connected" | "disconnected";
+    kafka?: "connected" | "disconnected";
   };
 }
 
@@ -263,7 +263,7 @@ export interface UpdateCustomerDto {
 }
 
 export interface SubmitKycDto {
-  documentType: 'PASSPORT' | 'DRIVING_LICENSE' | 'NATIONAL_ID';
+  documentType: "PASSPORT" | "DRIVING_LICENSE" | "NATIONAL_ID";
   documentNumber: string;
 }
 
@@ -298,7 +298,7 @@ export interface UpdateAccountStatusDto {
 export interface MutateBalanceDto {
   accountId: string;
   amountMinor: number;
-  operation: 'CREDIT' | 'DEBIT';
+  operation: "CREDIT" | "DEBIT";
   description?: string;
 }
 
@@ -437,9 +437,9 @@ export interface IBeneficiaryRemovedPayload {
 // ─── Wallet ─────────────────────────────────────────────────────────────────
 
 export enum WalletStatus {
-  ACTIVE = 'ACTIVE',
-  FROZEN = 'FROZEN',
-  CLOSED = 'CLOSED',
+  ACTIVE = "ACTIVE",
+  FROZEN = "FROZEN",
+  CLOSED = "CLOSED",
 }
 
 export interface IWallet {
@@ -483,11 +483,11 @@ export interface IWalletDebitedPayload {
 // ─── Payment ─────────────────────────────────────────────────────────────────
 
 export enum PaymentStatus {
-  PENDING = 'PENDING',
-  PROCESSING = 'PROCESSING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED',
-  REFUNDED = 'REFUNDED',
+  PENDING = "PENDING",
+  PROCESSING = "PROCESSING",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
+  REFUNDED = "REFUNDED",
 }
 
 export interface IPayment {
@@ -550,11 +550,11 @@ export interface IPaymentFailedPayload {
 // ─── Notification ─────────────────────────────────────────────────────────────
 
 export enum NotificationType {
-  TRANSACTION = 'TRANSACTION',
-  ACCOUNT = 'ACCOUNT',
-  PAYMENT = 'PAYMENT',
-  SECURITY = 'SECURITY',
-  SYSTEM = 'SYSTEM',
+  TRANSACTION = "TRANSACTION",
+  ACCOUNT = "ACCOUNT",
+  PAYMENT = "PAYMENT",
+  SECURITY = "SECURITY",
+  SYSTEM = "SYSTEM",
 }
 
 export interface INotification {
@@ -567,4 +567,3 @@ export interface INotification {
   metadata?: Record<string, any>;
   createdAt: Date;
 }
-

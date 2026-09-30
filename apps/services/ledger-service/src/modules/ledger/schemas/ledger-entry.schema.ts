@@ -1,5 +1,5 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document } from "mongoose";
 
 export type LedgerEntryDocument = LedgerEntry & Document;
 
@@ -11,13 +11,13 @@ export class LedgerEntry {
   @Prop({ required: true, index: true })
   accountNumber: string;
 
-  @Prop({ required: true, enum: ['DEBIT', 'CREDIT'] })
-  entryType: 'DEBIT' | 'CREDIT';
+  @Prop({ required: true, enum: ["DEBIT", "CREDIT"] })
+  entryType: "DEBIT" | "CREDIT";
 
   @Prop({ required: true, min: 1 })
   amountMinor: number;
 
-  @Prop({ required: true, default: 'INR' })
+  @Prop({ required: true, default: "INR" })
   currency: string;
 
   /**

@@ -1,7 +1,7 @@
-﻿import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { RecurringDepositEntity } from '../../entities/recurringdeposit.entity';
+﻿import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { RecurringDepositEntity } from "../../entities/recurringdeposit.entity";
 
 /** Recurring deposit management */
 @Injectable()

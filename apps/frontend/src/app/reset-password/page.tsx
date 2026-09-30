@@ -1,34 +1,34 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, Suspense } from 'react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { api } from '@/lib/api';
-import { 
-  Zap, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  ArrowRight, 
-  CheckCircle2, 
+import React, { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { api } from "@/lib/api";
+import {
+  Zap,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  CheckCircle2,
   AlertCircle,
-  KeyRound
-} from 'lucide-react';
+  KeyRound,
+} from "lucide-react";
 
 function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [token, setToken] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [token, setToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const urlToken = searchParams.get('token');
+    const urlToken = searchParams.get("token");
     if (urlToken) {
       setToken(urlToken);
     }
@@ -39,24 +39,26 @@ function ResetPasswordForm() {
     setError(null);
 
     if (!token) {
-      setError('Missing reset token. Please check your link or paste the token.');
+      setError(
+        "Missing reset token. Please check your link or paste the token.",
+      );
       return;
     }
 
     if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters long.');
+      setError("Password must be at least 8 characters long.");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError("Passwords do not match.");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await api('/api/v1/auth/reset-password', {
-        method: 'POST',
+      await api("/api/v1/auth/reset-password", {
+        method: "POST",
         body: JSON.stringify({
           token: token.trim(),
           newPassword,
@@ -65,10 +67,10 @@ function ResetPasswordForm() {
 
       setSuccess(true);
       setTimeout(() => {
-        router.push('/login');
+        router.push("/login");
       }, 2000);
     } catch (err: any) {
-      setError(err.message || 'Password reset failed. Token may be expired.');
+      setError(err.message || "Password reset failed. Token may be expired.");
     } finally {
       setIsSubmitting(false);
     }
@@ -121,7 +123,7 @@ function ResetPasswordForm() {
               </div>
               <input
                 id="reset-new-password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 required
                 placeholder="Enter new password (8+ chars, upper, lower, digit, symbol)"
                 value={newPassword}
@@ -133,7 +135,11 @@ function ResetPasswordForm() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
           </div>
@@ -148,7 +154,7 @@ function ResetPasswordForm() {
               </div>
               <input
                 id="reset-confirm-password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 required
                 placeholder="Re-enter new password"
                 value={confirmPassword}
@@ -175,7 +181,10 @@ function ResetPasswordForm() {
           </button>
 
           <div className="pt-2 text-center">
-            <Link href="/login" className="text-xs text-slate-400 hover:text-white transition">
+            <Link
+              href="/login"
+              className="text-xs text-slate-400 hover:text-white transition"
+            >
               Back to Sign In
             </Link>
           </div>
@@ -200,7 +209,10 @@ export default function ResetPasswordPage() {
               </div>
             </div>
             <span className="text-2xl font-black tracking-tight text-white">
-              Nova<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Bank</span>
+              Nova
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
+                Bank
+              </span>
             </span>
           </Link>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white pt-2">
@@ -211,7 +223,13 @@ export default function ResetPasswordPage() {
           </p>
         </div>
 
-        <Suspense fallback={<div className="p-8 text-center text-slate-400 text-xs">Loading reset form...</div>}>
+        <Suspense
+          fallback={
+            <div className="p-8 text-center text-slate-400 text-xs">
+              Loading reset form...
+            </div>
+          }
+        >
           <ResetPasswordForm />
         </Suspense>
       </div>

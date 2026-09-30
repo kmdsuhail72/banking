@@ -113,27 +113,28 @@ kubectl port-forward -n observability svc/grafana 3001:3000
 
 ## Access URLs
 
-| Service | URL | Credentials |
-|---|---|---|
-| **Grafana** | http://localhost:3001 | admin / admin |
-| **Prometheus** | http://localhost:9090 | — |
-| **Alertmanager** | http://localhost:9093 | — |
-| **Loki** | http://localhost:3100 | — |
-| **Tempo** | http://localhost:3200 | — |
+| Service            | URL                    | Credentials    |
+| ------------------ | ---------------------- | -------------- |
+| **Grafana**        | http://localhost:3001  | admin / admin  |
+| **Prometheus**     | http://localhost:9090  | —              |
+| **Alertmanager**   | http://localhost:9093  | —              |
+| **Loki**           | http://localhost:3100  | —              |
+| **Tempo**          | http://localhost:3200  | —              |
 | **OTel Collector** | http://localhost:13133 | (health check) |
 
 ---
 
 ## Grafana Dashboards
 
-| Dashboard | UID | Description |
-|---|---|---|
-| **Banking — Overview** | `banking-overview` | Platform-wide RED metrics for all 11 services |
-| **Banking — Service Dashboard** | `banking-service-dashboard` | Per-service drill-down (select service in dropdown) |
-| **Banking — Traces** | `banking-traces` | Distributed trace explorer, service graph, error traces |
-| **Banking — Kubernetes & HPA** | `banking-kubernetes` | Pod health, replica counts, HPA saturation |
+| Dashboard                       | UID                         | Description                                             |
+| ------------------------------- | --------------------------- | ------------------------------------------------------- |
+| **Banking — Overview**          | `banking-overview`          | Platform-wide RED metrics for all 11 services           |
+| **Banking — Service Dashboard** | `banking-service-dashboard` | Per-service drill-down (select service in dropdown)     |
+| **Banking — Traces**            | `banking-traces`            | Distributed trace explorer, service graph, error traces |
+| **Banking — Kubernetes & HPA**  | `banking-kubernetes`        | Pod health, replica counts, HPA saturation              |
 
 Direct links (when running locally):
+
 - Overview: http://localhost:3001/d/banking-overview
 - Service: http://localhost:3001/d/banking-service-dashboard
 - Traces: http://localhost:3001/d/banking-traces
@@ -147,11 +148,11 @@ Every service calls these **3 functions** from `@banking/observability`:
 
 ```typescript
 // 1. Before any imports — patches HTTP, gRPC, Mongoose, IORedis, NestJS
-startTelemetry('auth-service');
+startTelemetry("auth-service");
 
 // In bootstrap():
 // 2. Mounts /metrics endpoint + request middleware
-installMetrics(app, 'auth-service');
+installMetrics(app, "auth-service");
 
 // 3. Handles graceful OTEL flush on SIGTERM/SIGINT
 installTelemetryShutdown(app);
@@ -159,12 +160,12 @@ installTelemetryShutdown(app);
 
 ### Environment Variables (per service)
 
-| Variable | Value | Effect |
-|---|---|---|
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://otel-collector:4318` | OTLP endpoint |
-| `OTEL_SERVICE_NAME` | `auth-service` | Service name in traces/metrics/logs |
-| `OTEL_RESOURCE_ATTRIBUTES` | `service.version=1.0.0,...` | Extra resource tags |
-| `OTEL_SDK_DISABLED` | `true` | Disable telemetry entirely |
+| Variable                      | Value                        | Effect                              |
+| ----------------------------- | ---------------------------- | ----------------------------------- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://otel-collector:4318` | OTLP endpoint                       |
+| `OTEL_SERVICE_NAME`           | `auth-service`               | Service name in traces/metrics/logs |
+| `OTEL_RESOURCE_ATTRIBUTES`    | `service.version=1.0.0,...`  | Extra resource tags                 |
+| `OTEL_SDK_DISABLED`           | `true`                       | Disable telemetry entirely          |
 
 ---
 
@@ -172,19 +173,19 @@ installTelemetryShutdown(app);
 
 All metrics are prefixed with `banking_`:
 
-| Metric | Type | Labels | Description |
-|---|---|---|---|
-| `banking_http_requests_total` | Counter | method, route, status_code | Total HTTP requests |
-| `banking_http_request_duration_seconds` | Histogram | method, route, status_code | HTTP latency |
-| `banking_http_active_requests` | Gauge | method | In-flight requests |
-| `banking_grpc_request_duration_seconds` | Histogram | method, status_code | gRPC latency |
-| `banking_db_query_duration_seconds` | Histogram | operation, collection | MongoDB query time |
-| `banking_db_errors_total` | Counter | operation, collection | MongoDB errors |
-| `banking_cache_operations_total` | Counter | operation, status | Redis ops |
-| `banking_cache_hit_ratio` | Gauge | — | Cache hit rate |
-| `banking_business_events_total` | Counter | event_type, status | Domain events |
-| `traces_spanmetrics_calls_total` | Counter | service_name, ... | Span call rate (OTel) |
-| `traces_service_graph_request_total` | Counter | client, server | Service-to-service calls |
+| Metric                                  | Type      | Labels                     | Description              |
+| --------------------------------------- | --------- | -------------------------- | ------------------------ |
+| `banking_http_requests_total`           | Counter   | method, route, status_code | Total HTTP requests      |
+| `banking_http_request_duration_seconds` | Histogram | method, route, status_code | HTTP latency             |
+| `banking_http_active_requests`          | Gauge     | method                     | In-flight requests       |
+| `banking_grpc_request_duration_seconds` | Histogram | method, status_code        | gRPC latency             |
+| `banking_db_query_duration_seconds`     | Histogram | operation, collection      | MongoDB query time       |
+| `banking_db_errors_total`               | Counter   | operation, collection      | MongoDB errors           |
+| `banking_cache_operations_total`        | Counter   | operation, status          | Redis ops                |
+| `banking_cache_hit_ratio`               | Gauge     | —                          | Cache hit rate           |
+| `banking_business_events_total`         | Counter   | event_type, status         | Domain events            |
+| `traces_spanmetrics_calls_total`        | Counter   | service_name, ...          | Span call rate (OTel)    |
+| `traces_service_graph_request_total`    | Counter   | client, server             | Service-to-service calls |
 
 ---
 
@@ -192,26 +193,26 @@ All metrics are prefixed with `banking_`:
 
 Alert rules live in [`prometheus/rules/banking.yaml`](./prometheus/rules/banking.yaml).
 
-| Alert | Severity | Trigger |
-|---|---|---|
-| `BankingServiceDown` | 🔴 critical | Service unreachable for 1m |
-| `BankingServiceCrashLoop` | 🔴 critical | >2 restarts in 5m |
-| `BankingPodNotReady` | 🔴 critical | Pod not ready for 5m |
-| `BankingPodOOMKilled` | 🔴 critical | OOM kill detected |
-| `BankingHighErrorRate` | 🔴 critical | 5xx rate >1% for 5m |
-| `BankingHighP99Latency` | 🔴 critical | p99 >2s for 5m |
-| `BankingElevatedErrorRate` | 🟡 warning | 5xx rate >0.1% for 5m |
-| `BankingHighP95Latency` | 🟡 warning | p95 >1s for 5m |
-| `BankingHighP50Latency` | 🟡 warning | p50 >500ms for 10m |
-| `BankingHighMemoryUsage` | 🟡 warning | RSS >512MiB for 10m |
-| `BankingCriticalMemoryUsage` | 🔴 critical | RSS >1GiB for 5m |
-| `BankingHighCPUUsage` | 🟡 warning | CPU >80% for 10m |
-| `BankingHighActiveRequests` | 🟡 warning | Active requests >200 |
-| `BankingHighDBQueryLatency` | 🟡 warning | MongoDB p95 >500ms for 5m |
-| `BankingServiceNoTraffic` | 🟡 warning | 0 requests for 15m (service up) |
-| `BankingHighGrpcErrorRate` | 🟡 warning | gRPC non-OK >5% for 5m |
-| `BankingHPAMaxReplicas` | 🟡 warning | HPA at max for 5m |
-| `BankingHPAUnableToScale` | 🔴 critical | HPA scaling disabled for 10m |
+| Alert                        | Severity    | Trigger                         |
+| ---------------------------- | ----------- | ------------------------------- |
+| `BankingServiceDown`         | 🔴 critical | Service unreachable for 1m      |
+| `BankingServiceCrashLoop`    | 🔴 critical | >2 restarts in 5m               |
+| `BankingPodNotReady`         | 🔴 critical | Pod not ready for 5m            |
+| `BankingPodOOMKilled`        | 🔴 critical | OOM kill detected               |
+| `BankingHighErrorRate`       | 🔴 critical | 5xx rate >1% for 5m             |
+| `BankingHighP99Latency`      | 🔴 critical | p99 >2s for 5m                  |
+| `BankingElevatedErrorRate`   | 🟡 warning  | 5xx rate >0.1% for 5m           |
+| `BankingHighP95Latency`      | 🟡 warning  | p95 >1s for 5m                  |
+| `BankingHighP50Latency`      | 🟡 warning  | p50 >500ms for 10m              |
+| `BankingHighMemoryUsage`     | 🟡 warning  | RSS >512MiB for 10m             |
+| `BankingCriticalMemoryUsage` | 🔴 critical | RSS >1GiB for 5m                |
+| `BankingHighCPUUsage`        | 🟡 warning  | CPU >80% for 10m                |
+| `BankingHighActiveRequests`  | 🟡 warning  | Active requests >200            |
+| `BankingHighDBQueryLatency`  | 🟡 warning  | MongoDB p95 >500ms for 5m       |
+| `BankingServiceNoTraffic`    | 🟡 warning  | 0 requests for 15m (service up) |
+| `BankingHighGrpcErrorRate`   | 🟡 warning  | gRPC non-OK >5% for 5m          |
+| `BankingHPAMaxReplicas`      | 🟡 warning  | HPA at max for 5m               |
+| `BankingHPAUnableToScale`    | 🔴 critical | HPA scaling disabled for 10m    |
 
 ---
 
@@ -232,11 +233,13 @@ Every log line from `@banking/logger` includes `traceId` and `spanId` fields:
 ```
 
 In Grafana:
+
 1. Open any Loki log line that has a `traceId`
 2. Click **"View Trace in Tempo"** link (auto-derived field)
 3. Tempo opens the full distributed trace for that request
 
 In Tempo:
+
 1. Click any span in a trace
 2. Click **"Related logs"** to jump to Loki logs filtered by that `traceId`
 
@@ -247,6 +250,7 @@ In Tempo:
 All 11 services have HPA manifests in [`k8s/hpa.yaml`](../../k8s/hpa.yaml).
 
 **Scaling strategy:**
+
 - **CPU target**: 70% (65% for transaction/payment, 60% for kyc-risk)
 - **Memory target**: 80% (75% for high-load services)
 - **Min replicas**: 2 (zero-downtime rolling updates)
@@ -287,26 +291,31 @@ kubectl top pods -n banking
 ## Troubleshooting
 
 ### Grafana shows "No data"
+
 - Check Prometheus targets: http://localhost:9090/targets — all should be UP
 - Verify services expose `/metrics` — `curl http://localhost:4001/metrics | head`
 - Check OTel Collector logs: `docker logs banking-otel-collector-1`
 
 ### Traces not appearing in Tempo
+
 - Verify `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318` is set
 - Check collector logs: `docker logs banking-otel-collector-1`
 - Verify Tempo is receiving: `curl http://localhost:3200/ready`
 
 ### Logs not appearing in Loki
+
 - Check Promtail logs: `docker logs banking-promtail-1`
 - Verify Docker socket is accessible: `docker ps` from within Promtail
 - Check Loki: `curl http://localhost:3100/ready`
 
 ### Alerts not firing
+
 - Check rules loaded: http://localhost:9090/rules
 - Verify alertmanager connected: http://localhost:9090/alerts
 - Check alertmanager config: http://localhost:9093/#/status
 
 ### HPA shows `<unknown>` for metrics
+
 - Ensure `metrics-server` is running: `kubectl get pods -n kube-system | grep metrics`
 - Check metrics API: `kubectl top nodes`
 - Wait 2–3 minutes after deployment for metrics to populate

@@ -1,6 +1,6 @@
-﻿import { Controller } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
-import { EmiService } from './emi.service';
+﻿import { Controller } from "@nestjs/common";
+import { GrpcMethod } from "@nestjs/microservices";
+import { EmiService } from "./emi.service";
 
 /** gRPC server-side controller for EmiService proto */
 @Controller()

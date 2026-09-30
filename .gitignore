@@ -46,3 +46,7 @@ docker-data/
 *.pem
 *.key
 *.cert
+
+# Legacy local frontend
+banking-frontend/
+

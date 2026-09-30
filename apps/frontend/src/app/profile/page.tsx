@@ -1,37 +1,38 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { 
-  Zap, 
-  User, 
-  Mail, 
-  Phone, 
-  Calendar, 
-  MapPin, 
-  ShieldCheck, 
-  ArrowLeft, 
-  Save, 
-  CheckCircle2, 
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import {
+  Zap,
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  MapPin,
+  ShieldCheck,
+  ArrowLeft,
+  Save,
+  CheckCircle2,
   AlertCircle,
-  Activity
-} from 'lucide-react';
+  Activity,
+} from "lucide-react";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, customer, isAuthenticated, isLoading, updateCustomerProfile } = useAuth();
+  const { user, customer, isAuthenticated, isLoading, updateCustomerProfile } =
+    useAuth();
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState('');
-  const [street, setStreet] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [postalCode, setPostalCode] = useState('');
-  const [country, setCountry] = useState('United States');
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("United States");
 
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -39,25 +40,25 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+      router.push("/login");
     }
   }, [isAuthenticated, isLoading, router]);
 
   useEffect(() => {
     if (customer) {
-      setFirstName(customer.firstName || '');
-      setLastName(customer.lastName || '');
-      setPhone(customer.phone || '');
+      setFirstName(customer.firstName || "");
+      setLastName(customer.lastName || "");
+      setPhone(customer.phone || "");
       if (customer.dateOfBirth) {
         const d = new Date(customer.dateOfBirth);
-        setDateOfBirth(d.toISOString().split('T')[0]);
+        setDateOfBirth(d.toISOString().split("T")[0]);
       }
       if (customer.address) {
-        setStreet(customer.address.street || '');
-        setCity(customer.address.city || '');
-        setState(customer.address.state || '');
-        setPostalCode(customer.address.postalCode || '');
-        setCountry(customer.address.country || 'United States');
+        setStreet(customer.address.street || "");
+        setCity(customer.address.city || "");
+        setState(customer.address.state || "");
+        setPostalCode(customer.address.postalCode || "");
+        setCountry(customer.address.country || "United States");
       }
     }
   }, [customer]);
@@ -73,7 +74,9 @@ export default function ProfilePage() {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         phone: phone.trim(),
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth).toISOString() : undefined,
+        dateOfBirth: dateOfBirth
+          ? new Date(dateOfBirth).toISOString()
+          : undefined,
         address: {
           street: street.trim(),
           city: city.trim(),
@@ -86,7 +89,7 @@ export default function ProfilePage() {
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 4000);
     } catch (err: any) {
-      setError(err.message || 'Failed to update profile.');
+      setError(err.message || "Failed to update profile.");
     } finally {
       setIsSaving(false);
     }
@@ -109,20 +112,24 @@ export default function ProfilePage() {
       {/* Nav */}
       <nav className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-white/10 px-4 sm:px-8 py-3.5">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center space-x-2 text-xs text-slate-400 hover:text-white transition">
+          <Link
+            href="/dashboard"
+            className="flex items-center space-x-2 text-xs text-slate-400 hover:text-white transition"
+          >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Dashboard</span>
           </Link>
           <div className="flex items-center space-x-2">
             <User className="w-4 h-4 text-indigo-400" />
-            <span className="text-xs font-semibold text-white">Customer Profile</span>
+            <span className="text-xs font-semibold text-white">
+              Customer Profile
+            </span>
           </div>
         </div>
       </nav>
 
       {/* Container */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-8 space-y-6 relative z-10">
-        
         {/* Header card */}
         <div className="p-6 rounded-3xl bg-slate-900/80 border border-white/10 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -135,14 +142,16 @@ export default function ProfilePage() {
           </div>
           <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs">
             <Activity className="w-3.5 h-3.5 text-indigo-400" />
-            <span>KYC: {customer?.kycStatus || 'PENDING'}</span>
+            <span>KYC: {customer?.kycStatus || "PENDING"}</span>
           </div>
         </div>
 
         {savedSuccess && (
           <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center space-x-3 animate-in fade-in duration-200">
             <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-            <span>Your customer profile details have been successfully updated.</span>
+            <span>
+              Your customer profile details have been successfully updated.
+            </span>
           </div>
         )}
 
@@ -154,8 +163,10 @@ export default function ProfilePage() {
         )}
 
         {/* Edit Form */}
-        <form onSubmit={handleSave} className="p-6 sm:p-8 rounded-3xl bg-slate-900/70 border border-white/10 shadow-2xl space-y-6">
-          
+        <form
+          onSubmit={handleSave}
+          className="p-6 sm:p-8 rounded-3xl bg-slate-900/70 border border-white/10 shadow-2xl space-y-6"
+        >
           {/* Identity Section */}
           <div className="space-y-4">
             <h2 className="text-sm font-bold text-white flex items-center space-x-2 pb-2 border-b border-white/5">
@@ -165,7 +176,9 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300 block">First Name</label>
+                <label className="text-xs font-medium text-slate-300 block">
+                  First Name
+                </label>
                 <input
                   id="profile-firstname"
                   type="text"
@@ -177,7 +190,9 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300 block">Last Name</label>
+                <label className="text-xs font-medium text-slate-300 block">
+                  Last Name
+                </label>
                 <input
                   id="profile-lastname"
                   type="text"
@@ -189,7 +204,9 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300 block">Email Address (Auth Identity)</label>
+                <label className="text-xs font-medium text-slate-300 block">
+                  Email Address (Auth Identity)
+                </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                     <Mail className="w-4 h-4" />
@@ -204,7 +221,9 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300 block">Phone Number</label>
+                <label className="text-xs font-medium text-slate-300 block">
+                  Phone Number
+                </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                     <Phone className="w-4 h-4" />
@@ -221,7 +240,9 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-xs font-medium text-slate-300 block">Date of Birth</label>
+                <label className="text-xs font-medium text-slate-300 block">
+                  Date of Birth
+                </label>
                 <div className="relative max-w-xs">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                     <Calendar className="w-4 h-4" />
@@ -247,7 +268,9 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-xs font-medium text-slate-300 block">Street Address</label>
+                <label className="text-xs font-medium text-slate-300 block">
+                  Street Address
+                </label>
                 <input
                   id="profile-street"
                   type="text"
@@ -259,7 +282,9 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300 block">City</label>
+                <label className="text-xs font-medium text-slate-300 block">
+                  City
+                </label>
                 <input
                   id="profile-city"
                   type="text"
@@ -271,7 +296,9 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300 block">State / Province</label>
+                <label className="text-xs font-medium text-slate-300 block">
+                  State / Province
+                </label>
                 <input
                   id="profile-state"
                   type="text"
@@ -283,7 +310,9 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300 block">Postal / Zip Code</label>
+                <label className="text-xs font-medium text-slate-300 block">
+                  Postal / Zip Code
+                </label>
                 <input
                   id="profile-postalcode"
                   type="text"
@@ -295,7 +324,9 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300 block">Country</label>
+                <label className="text-xs font-medium text-slate-300 block">
+                  Country
+                </label>
                 <input
                   id="profile-country"
                   type="text"
@@ -332,7 +363,6 @@ export default function ProfilePage() {
               )}
             </button>
           </div>
-
         </form>
       </main>
     </div>

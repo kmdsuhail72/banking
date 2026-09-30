@@ -1,17 +1,17 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { OutboxEvent, OutboxDocument } from '../schemas/outbox.schema';
-import { KafkaEventBus } from '@banking/kafka';
-import { appConfig } from '@banking/config';
-import { createLogger } from '@banking/logger';
-import { v4 as uuidv4 } from 'uuid';
+import { Injectable, OnModuleInit } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
+import { OutboxEvent, OutboxDocument } from "../schemas/outbox.schema";
+import { KafkaEventBus } from "@banking/kafka";
+import { appConfig } from "@banking/config";
+import { createLogger } from "@banking/logger";
+import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class OutboxService implements OnModuleInit {
-  private logger = createLogger('OutboxService');
+  private logger = createLogger("OutboxService");
   private eventBus = new KafkaEventBus({
-    clientId: 'transaction-service',
+    clientId: "transaction-service",
     brokers: appConfig.kafka.brokers,
   });
 
@@ -23,7 +23,7 @@ export class OutboxService implements OnModuleInit {
   async onModuleInit() {
     try {
       await this.eventBus.getProducer();
-      this.logger.info('OutboxService Kafka producer connected');
+      this.logger.info("OutboxService Kafka producer connected");
     } catch (err: any) {
       this.logger.warn(`Kafka producer init warning: ${err.message}`);
     }
@@ -43,7 +43,7 @@ export class OutboxService implements OnModuleInit {
       eventType,
       aggregateId,
       payload,
-      status: 'PENDING',
+      status: "PENDING",
       occurredAt: new Date(),
     });
 
@@ -57,13 +57,17 @@ export class OutboxService implements OnModuleInit {
         payload,
       });
 
-      outbox.status = 'PUBLISHED';
+      outbox.status = "PUBLISHED";
       outbox.publishedAt = new Date();
       await outbox.save();
 
-      this.logger.info(`Outbox event '${eventType}' [${eventId}] published to topic '${topic}'`);
+      this.logger.info(
+        `Outbox event '${eventType}' [${eventId}] published to topic '${topic}'`,
+      );
     } catch (err: any) {
-      this.logger.warn(`Failed immediate publish for outbox event [${eventId}]: ${err.message}`);
+      this.logger.warn(
+        `Failed immediate publish for outbox event [${eventId}]: ${err.message}`,
+      );
       outbox.error = err.message;
       await outbox.save();
     }

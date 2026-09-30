@@ -6,6 +6,7 @@
 - **Mode**: KRaft (ZooKeeper-less)
 
 ### Core Event Topics
+
 - `banking.auth.events`
 - `banking.customer.events`
 - `banking.account.events`

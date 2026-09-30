@@ -1,6 +1,6 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { KycStatus, ICustomerAddress } from '@banking/shared-types';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document } from "mongoose";
+import { KycStatus, ICustomerAddress } from "@banking/shared-types";
 
 export type CustomerDocument = Customer & Document;
 
@@ -22,7 +22,7 @@ export class Address implements ICustomerAddress {
   country?: string;
 }
 
-@Schema({ timestamps: true, collection: 'customers' })
+@Schema({ timestamps: true, collection: "customers" })
 export class Customer {
   @Prop({ required: true, unique: true, index: true })
   userId: string;

@@ -1,6 +1,6 @@
-﻿import { Controller } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
-import { SchedulerService } from './scheduler.service';
+﻿import { Controller } from "@nestjs/common";
+import { GrpcMethod } from "@nestjs/microservices";
+import { SchedulerService } from "./scheduler.service";
 
 /** gRPC server-side controller for SchedulerService proto */
 @Controller()

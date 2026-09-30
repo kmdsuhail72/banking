@@ -1,7 +1,7 @@
-﻿import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { SchedulerEntity } from '../../entities/scheduler.entity';
+﻿import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { SchedulerEntity } from "../../entities/scheduler.entity";
 
 /** Cron-based batch job triggers */
 @Injectable()

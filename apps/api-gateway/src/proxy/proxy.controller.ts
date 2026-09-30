@@ -1,63 +1,63 @@
-import { Controller, All, Req, Res } from '@nestjs/common';
-import { Request, Response } from 'express';
-import { ProxyService } from './proxy.service';
+import { Controller, All, Req, Res } from "@nestjs/common";
+import { Request, Response } from "express";
+import { ProxyService } from "./proxy.service";
 
-@Controller('api/v1')
+@Controller("api/v1")
 export class ProxyController {
   constructor(private readonly proxyService: ProxyService) {}
 
-  @All('auth*')
+  @All("auth*")
   handleAuth(@Req() req: Request, @Res() res: Response) {
-    return this.proxyService.forwardRequest('auth', req, res);
+    return this.proxyService.forwardRequest("auth", req, res);
   }
 
-  @All('customers*')
+  @All("customers*")
   handleCustomers(@Req() req: Request, @Res() res: Response) {
-    return this.proxyService.forwardRequest('customers', req, res);
+    return this.proxyService.forwardRequest("customers", req, res);
   }
 
-  @All('accounts*')
+  @All("accounts*")
   handleAccounts(@Req() req: Request, @Res() res: Response) {
-    return this.proxyService.forwardRequest('accounts', req, res);
+    return this.proxyService.forwardRequest("accounts", req, res);
   }
 
-  @All('transactions*')
+  @All("transactions*")
   handleTransactions(@Req() req: Request, @Res() res: Response) {
-    return this.proxyService.forwardRequest('transactions', req, res);
+    return this.proxyService.forwardRequest("transactions", req, res);
   }
 
-  @All('ledger*')
+  @All("ledger*")
   handleLedger(@Req() req: Request, @Res() res: Response) {
-    return this.proxyService.forwardRequest('ledger', req, res);
+    return this.proxyService.forwardRequest("ledger", req, res);
   }
 
-  @All('payments*')
+  @All("payments*")
   handlePayments(@Req() req: Request, @Res() res: Response) {
-    return this.proxyService.forwardRequest('payments', req, res);
+    return this.proxyService.forwardRequest("payments", req, res);
   }
 
-  @All('wallets*')
+  @All("wallets*")
   handleWallets(@Req() req: Request, @Res() res: Response) {
-    return this.proxyService.forwardRequest('wallets', req, res);
+    return this.proxyService.forwardRequest("wallets", req, res);
   }
 
-  @All('beneficiaries*')
+  @All("beneficiaries*")
   handleBeneficiaries(@Req() req: Request, @Res() res: Response) {
-    return this.proxyService.forwardRequest('beneficiaries', req, res);
+    return this.proxyService.forwardRequest("beneficiaries", req, res);
   }
 
-  @All('notifications*')
+  @All("notifications*")
   handleNotifications(@Req() req: Request, @Res() res: Response) {
-    return this.proxyService.forwardRequest('notifications', req, res);
+    return this.proxyService.forwardRequest("notifications", req, res);
   }
 
-  @All('kyc*')
+  @All("kyc*")
   handleKyc(@Req() req: Request, @Res() res: Response) {
-    return this.proxyService.forwardRequest('kyc', req, res);
+    return this.proxyService.forwardRequest("kyc", req, res);
   }
 
-  @All('reporting*')
+  @All("reporting*")
   handleReporting(@Req() req: Request, @Res() res: Response) {
-    return this.proxyService.forwardRequest('reporting', req, res);
+    return this.proxyService.forwardRequest("reporting", req, res);
   }
 }

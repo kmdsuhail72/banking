@@ -5,22 +5,12 @@ const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 
 const {
-
   getTransactions,
-  transferMoney
-
+  transferMoney,
 } = require("../controllers/transactionController");
 
-router.get(
-  "/",
-  authMiddleware,
-  getTransactions
-);
+router.get("/", authMiddleware, getTransactions);
 
-router.post(
-  "/transfer",
-  authMiddleware,
-  transferMoney
-);
+router.post("/transfer", authMiddleware, transferMoney);
 
 module.exports = router;

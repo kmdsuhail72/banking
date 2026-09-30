@@ -2,16 +2,76 @@ const fs = require("fs");
 const path = require("path");
 
 const services = [
-  { name: "customer-service", portKey: "customer", defaultPort: 4002, label: "CustomerService", icon: "👤" },
-  { name: "account-service", portKey: "account", defaultPort: 4003, label: "AccountService", icon: "🏦" },
-  { name: "transaction-service", portKey: "transaction", defaultPort: 4004, label: "TransactionService", icon: "💸" },
-  { name: "ledger-service", portKey: "ledger", defaultPort: 4005, label: "LedgerService", icon: "📖" },
-  { name: "payment-service", portKey: "payment", defaultPort: 4006, label: "PaymentService", icon: "💳" },
-  { name: "wallet-service", portKey: "wallet", defaultPort: 4007, label: "WalletService", icon: "👛" },
-  { name: "beneficiary-service", portKey: "beneficiary", defaultPort: 4008, label: "BeneficiaryService", icon: "🤝" },
-  { name: "notification-service", portKey: "notification", defaultPort: 4009, label: "NotificationService", icon: "🔔" },
-  { name: "kyc-risk-service", portKey: "kycRisk", defaultPort: 4010, label: "KycRiskService", icon: "🛡️" },
-  { name: "reporting-service", portKey: "reporting", defaultPort: 4011, label: "ReportingService", icon: "📊" }
+  {
+    name: "customer-service",
+    portKey: "customer",
+    defaultPort: 4002,
+    label: "CustomerService",
+    icon: "👤",
+  },
+  {
+    name: "account-service",
+    portKey: "account",
+    defaultPort: 4003,
+    label: "AccountService",
+    icon: "🏦",
+  },
+  {
+    name: "transaction-service",
+    portKey: "transaction",
+    defaultPort: 4004,
+    label: "TransactionService",
+    icon: "💸",
+  },
+  {
+    name: "ledger-service",
+    portKey: "ledger",
+    defaultPort: 4005,
+    label: "LedgerService",
+    icon: "📖",
+  },
+  {
+    name: "payment-service",
+    portKey: "payment",
+    defaultPort: 4006,
+    label: "PaymentService",
+    icon: "💳",
+  },
+  {
+    name: "wallet-service",
+    portKey: "wallet",
+    defaultPort: 4007,
+    label: "WalletService",
+    icon: "👛",
+  },
+  {
+    name: "beneficiary-service",
+    portKey: "beneficiary",
+    defaultPort: 4008,
+    label: "BeneficiaryService",
+    icon: "🤝",
+  },
+  {
+    name: "notification-service",
+    portKey: "notification",
+    defaultPort: 4009,
+    label: "NotificationService",
+    icon: "🔔",
+  },
+  {
+    name: "kyc-risk-service",
+    portKey: "kycRisk",
+    defaultPort: 4010,
+    label: "KycRiskService",
+    icon: "🛡️",
+  },
+  {
+    name: "reporting-service",
+    portKey: "reporting",
+    defaultPort: 4011,
+    label: "ReportingService",
+    icon: "📊",
+  },
 ];
 
 const baseDir = path.join(process.cwd(), "apps", "services");
@@ -30,7 +90,7 @@ for (const s of services) {
     scripts: {
       build: "tsc",
       start: "node dist/main.js",
-      dev: "ts-node-dev --respawn --transpile-only src/main.ts"
+      dev: "ts-node-dev --respawn --transpile-only src/main.ts",
     },
     dependencies: {
       "@banking/config": "workspace:*",
@@ -42,27 +102,33 @@ for (const s of services) {
       "@nestjs/core": "^10.4.15",
       "@nestjs/platform-express": "^10.4.15",
       "reflect-metadata": "^0.2.2",
-      "rxjs": "^7.8.1"
+      rxjs: "^7.8.1",
     },
     devDependencies: {
       "@types/express": "^4.17.21",
       "@types/node": "^22.10.7",
       "ts-node-dev": "^2.0.0",
-      "typescript": "^5.8.2"
-    }
+      typescript: "^5.8.2",
+    },
   };
-  fs.writeFileSync(path.join(sDir, "package.json"), JSON.stringify(pkg, null, 2));
+  fs.writeFileSync(
+    path.join(sDir, "package.json"),
+    JSON.stringify(pkg, null, 2),
+  );
 
   // tsconfig.json
   const tsconfig = {
     extends: "../../../tsconfig.json",
     compilerOptions: {
       outDir: "./dist",
-      rootDir: "./src"
+      rootDir: "./src",
     },
-    include: ["src/**/*"]
+    include: ["src/**/*"],
   };
-  fs.writeFileSync(path.join(sDir, "tsconfig.json"), JSON.stringify(tsconfig, null, 2));
+  fs.writeFileSync(
+    path.join(sDir, "tsconfig.json"),
+    JSON.stringify(tsconfig, null, 2),
+  );
 
   // health.controller.ts
   const healthCtrl = `import { Controller, Get } from '@nestjs/common';

@@ -1,10 +1,10 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { UserRole, UserStatus } from '@banking/shared-types';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document } from "mongoose";
+import { UserRole, UserStatus } from "@banking/shared-types";
 
 export type UserDocument = User & Document;
 
-@Schema({ timestamps: true, collection: 'users' })
+@Schema({ timestamps: true, collection: "users" })
 export class User {
   @Prop({ required: true, unique: true, lowercase: true, trim: true })
   email: string;

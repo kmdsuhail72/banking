@@ -1,5 +1,5 @@
-import { IsOptional, IsString } from 'class-validator';
-import { RefreshTokenDto } from '@banking/shared-types';
+import { IsOptional, IsString } from "class-validator";
+import { RefreshTokenDto } from "@banking/shared-types";
 
 export class RefreshTokenRequestDto implements RefreshTokenDto {
   @IsString()

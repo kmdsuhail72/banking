@@ -1,24 +1,35 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { DashboardNav } from '@/components/DashboardNav';
-import { AccountType } from '@banking/shared-types';
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { DashboardNav } from "@/components/DashboardNav";
+import { AccountType } from "@banking/shared-types";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, customer, accounts, transactions, totalBalanceMinor, isLoading, createAccount, refreshAccounts } = useAuth();
+  const {
+    user,
+    customer,
+    accounts,
+    transactions,
+    totalBalanceMinor,
+    isLoading,
+    createAccount,
+    refreshAccounts,
+  } = useAuth();
   const [isOpeningAccount, setIsOpeningAccount] = useState(false);
-  const [selectedType, setSelectedType] = useState<AccountType>(AccountType.SAVINGS);
-  const [createError, setCreateError] = useState('');
+  const [selectedType, setSelectedType] = useState<AccountType>(
+    AccountType.SAVINGS,
+  );
+  const [createError, setCreateError] = useState("");
   const [copiedAccount, setCopiedAccount] = useState<string | null>(null);
 
   // Redirect unauthenticated users — must be in useEffect, not render body
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/login');
+      router.push("/login");
     }
   }, [isLoading, user, router]);
 
@@ -27,7 +38,9 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
           <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-400 text-sm font-medium">Loading your banking workspace...</p>
+          <p className="text-slate-400 text-sm font-medium">
+            Loading your banking workspace...
+          </p>
         </div>
       </div>
     );
@@ -40,13 +53,16 @@ export default function DashboardPage() {
 
   const handleOpenAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    setCreateError('');
+    setCreateError("");
     try {
       await createAccount({ type: selectedType });
       setIsOpeningAccount(false);
       await refreshAccounts();
     } catch (err: any) {
-      setCreateError(err.message || 'Failed to create account. You may already have an active account of this type.');
+      setCreateError(
+        err.message ||
+          "Failed to create account. You may already have an active account of this type.",
+      );
     }
   };
 
@@ -56,7 +72,7 @@ export default function DashboardPage() {
     setTimeout(() => setCopiedAccount(null), 2000);
   };
 
-  const displayName = customer?.firstName || user.email.split('@')[0];
+  const displayName = customer?.firstName || user.email.split("@")[0];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
@@ -74,11 +90,18 @@ export default function DashboardPage() {
                   {user.role} PORTAL
                 </span>
                 <span className="text-xs text-slate-400">
-                  Customer ID: <code className="text-slate-300 font-mono">{user.id.substring(0, 10)}...</code>
+                  Customer ID:{" "}
+                  <code className="text-slate-300 font-mono">
+                    {user.id.substring(0, 10)}...
+                  </code>
                 </span>
               </div>
               <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-                Good day, <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">{displayName}</span> 👋
+                Good day,{" "}
+                <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+                  {displayName}
+                </span>{" "}
+                👋
               </h1>
               <p className="text-slate-400 text-sm mt-1">
                 Here is your live banking overview and account activity.
@@ -87,15 +110,21 @@ export default function DashboardPage() {
 
             {/* Total Balance Card */}
             <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-5 sm:p-6 backdrop-blur-sm min-w-[260px]">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Net Worth</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Total Net Worth
+              </p>
               <div className="flex items-baseline space-x-2 mt-1">
                 <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                  ₹{(totalBalanceMinor / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  ₹
+                  {(totalBalanceMinor / 100).toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                  })}
                 </span>
                 <span className="text-xs font-bold text-emerald-400">INR</span>
               </div>
               <p className="text-xs text-slate-500 mt-1">
-                Across {accounts.length} {accounts.length === 1 ? 'account' : 'accounts'}
+                Across {accounts.length}{" "}
+                {accounts.length === 1 ? "account" : "accounts"}
               </p>
             </div>
           </div>
@@ -108,8 +137,18 @@ export default function DashboardPage() {
             className="flex items-center space-x-3.5 p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-850 transition-all group"
           >
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                />
               </svg>
             </div>
             <div>
@@ -123,8 +162,18 @@ export default function DashboardPage() {
             className="flex items-center space-x-3.5 p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-teal-500/50 hover:bg-slate-850 transition-all group"
           >
             <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400 group-hover:scale-110 transition-transform">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                />
               </svg>
             </div>
             <div>
@@ -138,8 +187,18 @@ export default function DashboardPage() {
             className="flex items-center space-x-3.5 p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-850 transition-all group"
           >
             <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 10l7-7m0 0l7 7m-7-7v18"
+                />
               </svg>
             </div>
             <div>
@@ -153,8 +212,18 @@ export default function DashboardPage() {
             className="flex items-center space-x-3.5 p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-400/50 hover:bg-slate-850 transition-all group cursor-pointer text-left"
           >
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 4v16m8-8H4"
+                />
               </svg>
             </div>
             <div>
@@ -168,8 +237,12 @@ export default function DashboardPage() {
         {isOpeningAccount && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative">
-              <h2 className="text-xl font-bold text-white">Open a New Bank Account</h2>
-              <p className="text-slate-400 text-sm mt-1">Select an account type to generate a dedicated bank account.</p>
+              <h2 className="text-xl font-bold text-white">
+                Open a New Bank Account
+              </h2>
+              <p className="text-slate-400 text-sm mt-1">
+                Select an account type to generate a dedicated bank account.
+              </p>
 
               {createError && (
                 <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
@@ -179,17 +252,23 @@ export default function DashboardPage() {
 
               <form onSubmit={handleOpenAccount} className="mt-6 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-300">Account Type</label>
+                  <label className="text-xs font-semibold text-slate-300">
+                    Account Type
+                  </label>
                   <div className="grid grid-cols-3 gap-3">
-                    {[AccountType.SAVINGS, AccountType.CURRENT, AccountType.SALARY].map((type) => (
+                    {[
+                      AccountType.SAVINGS,
+                      AccountType.CURRENT,
+                      AccountType.SALARY,
+                    ].map((type) => (
                       <button
                         key={type}
                         type="button"
                         onClick={() => setSelectedType(type)}
                         className={`p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                           selectedType === type
-                            ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                            : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800'
+                            ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+                            : "bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800"
                         }`}
                       >
                         {type}
@@ -203,7 +282,7 @@ export default function DashboardPage() {
                     type="button"
                     onClick={() => {
                       setIsOpeningAccount(false);
-                      setCreateError('');
+                      setCreateError("");
                     }}
                     className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
                   >
@@ -225,8 +304,12 @@ export default function DashboardPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-white">Your Bank Accounts</h2>
-              <p className="text-xs text-slate-400">Manage savings, current, and salary balances.</p>
+              <h2 className="text-xl font-bold text-white">
+                Your Bank Accounts
+              </h2>
+              <p className="text-xs text-slate-400">
+                Manage savings, current, and salary balances.
+              </p>
             </div>
             <Link
               href="/dashboard/accounts"
@@ -241,9 +324,12 @@ export default function DashboardPage() {
               <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto mb-3">
                 🏦
               </div>
-              <h3 className="text-base font-bold text-white">No active bank accounts</h3>
+              <h3 className="text-base font-bold text-white">
+                No active bank accounts
+              </h3>
               <p className="text-slate-400 text-xs mt-1 max-w-sm mx-auto">
-                Open your first savings or current account in seconds to begin making deposits and transfers.
+                Open your first savings or current account in seconds to begin
+                making deposits and transfers.
               </p>
               <button
                 onClick={() => setIsOpeningAccount(true)}
@@ -273,16 +359,18 @@ export default function DashboardPage() {
                           className="text-xs text-slate-500 hover:text-emerald-400 transition-colors"
                           title="Copy Account Number"
                         >
-                          {copiedAccount === acc.accountNumber ? '✓ Copied' : '📋'}
+                          {copiedAccount === acc.accountNumber
+                            ? "✓ Copied"
+                            : "📋"}
                         </button>
                       </div>
                     </div>
 
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        acc.status === 'ACTIVE'
-                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                        acc.status === "ACTIVE"
+                          ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                          : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
                       }`}
                     >
                       {acc.status}
@@ -290,9 +378,14 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-slate-800/80">
-                    <p className="text-[11px] font-medium text-slate-400">Available Balance</p>
+                    <p className="text-[11px] font-medium text-slate-400">
+                      Available Balance
+                    </p>
                     <p className="text-2xl font-black text-white tracking-tight mt-0.5">
-                      ₹{((acc.balanceMinor || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      ₹
+                      {((acc.balanceMinor || 0) / 100).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                      })}
                     </p>
                   </div>
 
@@ -326,8 +419,12 @@ export default function DashboardPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-white">Recent Transactions</h2>
-              <p className="text-xs text-slate-400">Real-time ledger updates & transfers.</p>
+              <h2 className="text-xl font-bold text-white">
+                Recent Transactions
+              </h2>
+              <p className="text-xs text-slate-400">
+                Real-time ledger updates & transfers.
+              </p>
             </div>
             <Link
               href="/dashboard/transactions"
@@ -339,37 +436,46 @@ export default function DashboardPage() {
 
           {transactions.length === 0 ? (
             <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 text-center text-slate-400 text-xs">
-              No transactions recorded yet. Make a deposit or transfer to see activity.
+              No transactions recorded yet. Make a deposit or transfer to see
+              activity.
             </div>
           ) : (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl divide-y divide-slate-800 overflow-hidden">
               {transactions.slice(0, 5).map((txn) => {
-                const isCredit = txn.type === 'DEPOSIT';
-                const formattedDate = new Date(txn.createdAt).toLocaleDateString('en-IN', {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
+                const isCredit = txn.type === "DEPOSIT";
+                const formattedDate = new Date(
+                  txn.createdAt,
+                ).toLocaleDateString("en-IN", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
                 });
 
                 return (
-                  <div key={txn.id || txn.transactionId} className="p-4 flex items-center justify-between hover:bg-slate-850/50 transition-colors">
+                  <div
+                    key={txn.id || txn.transactionId}
+                    className="p-4 flex items-center justify-between hover:bg-slate-850/50 transition-colors"
+                  >
                     <div className="flex items-center space-x-3.5">
                       <div
                         className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold ${
                           isCredit
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                            : txn.type === 'TRANSFER'
-                            ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
-                            : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                            : txn.type === "TRANSFER"
+                              ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
+                              : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                         }`}
                       >
-                        {isCredit ? '↓' : txn.type === 'TRANSFER' ? '⇄' : '↑'}
+                        {isCredit ? "↓" : txn.type === "TRANSFER" ? "⇄" : "↑"}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-white">{txn.description || txn.type}</p>
+                        <p className="text-sm font-bold text-white">
+                          {txn.description || txn.type}
+                        </p>
                         <p className="text-xs text-slate-400">
-                          {formattedDate} • <span className="font-mono">{txn.transactionId}</span>
+                          {formattedDate} •{" "}
+                          <span className="font-mono">{txn.transactionId}</span>
                         </p>
                       </div>
                     </div>
@@ -377,18 +483,21 @@ export default function DashboardPage() {
                     <div className="text-right">
                       <p
                         className={`text-sm font-black font-mono ${
-                          isCredit ? 'text-emerald-400' : 'text-slate-200'
+                          isCredit ? "text-emerald-400" : "text-slate-200"
                         }`}
                       >
-                        {isCredit ? '+' : '-'}₹{(txn.amountMinor / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        {isCredit ? "+" : "-"}₹
+                        {(txn.amountMinor / 100).toLocaleString("en-IN", {
+                          minimumFractionDigits: 2,
+                        })}
                       </p>
                       <span
                         className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                          txn.status === 'COMPLETED'
-                            ? 'text-emerald-400 bg-emerald-500/10'
-                            : txn.status === 'PENDING'
-                            ? 'text-amber-400 bg-amber-500/10'
-                            : 'text-rose-400 bg-rose-500/10'
+                          txn.status === "COMPLETED"
+                            ? "text-emerald-400 bg-emerald-500/10"
+                            : txn.status === "PENDING"
+                              ? "text-amber-400 bg-amber-500/10"
+                              : "text-rose-400 bg-rose-500/10"
                         }`}
                       >
                         {txn.status}

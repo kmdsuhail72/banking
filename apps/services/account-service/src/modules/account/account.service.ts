@@ -4,29 +4,29 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
-} from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, isValidObjectId } from 'mongoose';
-import { Account, AccountDocument } from './schemas/account.schema';
-import { CreateAccountDto } from './dto/create-account.dto';
-import { MutateBalanceDto } from './dto/mutate-balance.dto';
+} from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model, isValidObjectId } from "mongoose";
+import { Account, AccountDocument } from "./schemas/account.schema";
+import { CreateAccountDto } from "./dto/create-account.dto";
+import { MutateBalanceDto } from "./dto/mutate-balance.dto";
 import {
   AccountType,
   AccountStatus,
   KafkaTopics,
   IAccountCreatedPayload,
-} from '@banking/shared-types';
-import { generateAccountNumber } from './utils/account-number';
-import { KafkaEventBus } from '@banking/kafka';
-import { createLogger } from '@banking/logger';
-import { appConfig } from '@banking/config';
-import { v4 as uuidv4 } from 'uuid';
+} from "@banking/shared-types";
+import { generateAccountNumber } from "./utils/account-number";
+import { KafkaEventBus } from "@banking/kafka";
+import { createLogger } from "@banking/logger";
+import { appConfig } from "@banking/config";
+import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class AccountService {
-  private logger = createLogger('AccountService');
+  private logger = createLogger("AccountService");
   private eventBus = new KafkaEventBus({
-    clientId: 'account-service',
+    clientId: "account-service",
     brokers: appConfig.kafka.brokers,
   });
 
@@ -38,13 +38,16 @@ export class AccountService {
   async onModuleInit() {
     try {
       await this.eventBus.getProducer();
-      this.logger.info('AccountService Kafka producer connected');
+      this.logger.info("AccountService Kafka producer connected");
     } catch (err: any) {
       this.logger.warn(`Kafka producer connection warning: ${err.message}`);
     }
   }
 
-  async createAccount(userId: string, dto: CreateAccountDto): Promise<AccountDocument> {
+  async createAccount(
+    userId: string,
+    dto: CreateAccountDto,
+  ): Promise<AccountDocument> {
     const existing = await this.accountModel.findOne({
       userId,
       type: dto.type,
@@ -75,7 +78,7 @@ export class AccountService {
       accountNumber,
       userId,
       type: dto.type,
-      currency: dto.currency || 'INR',
+      currency: dto.currency || "INR",
       balanceMinor: 0,
       availableBalanceMinor: 0,
       status: AccountStatus.ACTIVE,
@@ -93,18 +96,21 @@ export class AccountService {
         userId: account.userId,
         type: account.type,
         currency: account.currency,
-        createdAt: (account as any).createdAt?.toISOString() || new Date().toISOString(),
+        createdAt:
+          (account as any).createdAt?.toISOString() || new Date().toISOString(),
       };
 
       await this.eventBus.publish(KafkaTopics.ACCOUNT_CREATED, {
         eventId: uuidv4(),
-        eventType: 'AccountCreated',
+        eventType: "AccountCreated",
         version: 1,
         occurredAt: new Date().toISOString(),
         payload: eventPayload,
       });
     } catch (err: any) {
-      this.logger.warn(`Could not dispatch account.created event: ${err.message}`);
+      this.logger.warn(
+        `Could not dispatch account.created event: ${err.message}`,
+      );
     }
 
     return account;
@@ -120,7 +126,10 @@ export class AccountService {
   ): Promise<AccountDocument> {
     const query: any = {};
     if (isValidObjectId(accountIdOrNumber)) {
-      query.$or = [{ _id: accountIdOrNumber }, { accountNumber: accountIdOrNumber }];
+      query.$or = [
+        { _id: accountIdOrNumber },
+        { accountNumber: accountIdOrNumber },
+      ];
     } else {
       query.accountNumber = accountIdOrNumber;
     }
@@ -131,7 +140,9 @@ export class AccountService {
     }
 
     if (userId && account.userId !== userId) {
-      throw new ForbiddenException('You do not have permission to access this account');
+      throw new ForbiddenException(
+        "You do not have permission to access this account",
+      );
     }
 
     return account;
@@ -157,8 +168,13 @@ export class AccountService {
   ): Promise<AccountDocument> {
     const account = await this.getAccountById(accountIdOrNumber, userId);
 
-    if (account.status === AccountStatus.CLOSED && newStatus === AccountStatus.ACTIVE) {
-      throw new BadRequestException('Cannot reactivate a permanently closed account');
+    if (
+      account.status === AccountStatus.CLOSED &&
+      newStatus === AccountStatus.ACTIVE
+    ) {
+      throw new BadRequestException(
+        "Cannot reactivate a permanently closed account",
+      );
     }
 
     const previousStatus = account.status;
@@ -170,11 +186,14 @@ export class AccountService {
     );
 
     // Publish account.closed event for downstream services
-    if (newStatus === AccountStatus.CLOSED && previousStatus !== AccountStatus.CLOSED) {
+    if (
+      newStatus === AccountStatus.CLOSED &&
+      previousStatus !== AccountStatus.CLOSED
+    ) {
       try {
         await this.eventBus.publish(KafkaTopics.ACCOUNT_CREATED, {
           eventId: uuidv4(),
-          eventType: 'AccountClosed',
+          eventType: "AccountClosed",
           version: 1,
           occurredAt: new Date().toISOString(),
           payload: {
@@ -187,7 +206,9 @@ export class AccountService {
           },
         });
       } catch (err: any) {
-        this.logger.warn(`Could not dispatch account.closed event: ${err.message}`);
+        this.logger.warn(
+          `Could not dispatch account.closed event: ${err.message}`,
+        );
       }
     }
 
@@ -206,26 +227,30 @@ export class AccountService {
       query.accountNumber = dto.accountId;
     }
 
-    if (dto.operation === 'DEBIT') {
+    if (dto.operation === "DEBIT") {
       // Ensure sufficient balance atomically
       query.availableBalanceMinor = { $gte: dto.amountMinor };
 
-      const updated = await this.accountModel.findOneAndUpdate(
-        query,
-        {
-          $inc: {
-            balanceMinor: -dto.amountMinor,
-            availableBalanceMinor: -dto.amountMinor,
+      const updated = await this.accountModel
+        .findOneAndUpdate(
+          query,
+          {
+            $inc: {
+              balanceMinor: -dto.amountMinor,
+              availableBalanceMinor: -dto.amountMinor,
+            },
           },
-        },
-        { new: true },
-      ).exec();
+          { new: true },
+        )
+        .exec();
 
       if (!updated) {
         // Inspect failure reason
         const exists = await this.accountModel.findOne(
           isValidObjectId(dto.accountId)
-            ? { $or: [{ _id: dto.accountId }, { accountNumber: dto.accountId }] }
+            ? {
+                $or: [{ _id: dto.accountId }, { accountNumber: dto.accountId }],
+              }
             : { accountNumber: dto.accountId },
         );
 
@@ -238,8 +263,8 @@ export class AccountService {
           );
         }
         throw new BadRequestException({
-          code: 'INSUFFICIENT_FUNDS',
-          message: 'Insufficient account balance',
+          code: "INSUFFICIENT_FUNDS",
+          message: "Insufficient account balance",
         });
       }
 
@@ -250,21 +275,25 @@ export class AccountService {
       return updated;
     } else {
       // CREDIT
-      const updated = await this.accountModel.findOneAndUpdate(
-        query,
-        {
-          $inc: {
-            balanceMinor: dto.amountMinor,
-            availableBalanceMinor: dto.amountMinor,
+      const updated = await this.accountModel
+        .findOneAndUpdate(
+          query,
+          {
+            $inc: {
+              balanceMinor: dto.amountMinor,
+              availableBalanceMinor: dto.amountMinor,
+            },
           },
-        },
-        { new: true },
-      ).exec();
+          { new: true },
+        )
+        .exec();
 
       if (!updated) {
         const exists = await this.accountModel.findOne(
           isValidObjectId(dto.accountId)
-            ? { $or: [{ _id: dto.accountId }, { accountNumber: dto.accountId }] }
+            ? {
+                $or: [{ _id: dto.accountId }, { accountNumber: dto.accountId }],
+              }
             : { accountNumber: dto.accountId },
         );
 
@@ -287,10 +316,18 @@ export class AccountService {
   /**
    * Admin: list all accounts with pagination
    */
-  async getAllAccounts(page = 1, limit = 20): Promise<{ accounts: AccountDocument[]; total: number; pages: number }> {
+  async getAllAccounts(
+    page = 1,
+    limit = 20,
+  ): Promise<{ accounts: AccountDocument[]; total: number; pages: number }> {
     const skip = (page - 1) * limit;
     const [accounts, total] = await Promise.all([
-      this.accountModel.find().sort({ createdAt: -1 }).skip(skip).limit(limit).exec(),
+      this.accountModel
+        .find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
       this.accountModel.countDocuments().exec(),
     ]);
     return { accounts, total, pages: Math.ceil(total / limit) };

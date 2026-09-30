@@ -24,8 +24,8 @@ datasources:
         - datasourceUid: tempo
           matcherRegex: '"traceId":"([a-f0-9]{32})"'
           name: TraceID
-          url: '$${__value.raw}'
-          urlDisplayLabel: 'View Trace in Tempo'
+          url: "$${__value.raw}"
+          urlDisplayLabel: "View Trace in Tempo"
 
   - name: Tempo
     type: tempo
@@ -41,26 +41,26 @@ datasources:
         enabled: true
       traceQuery:
         timeShiftEnabled: true
-        spanStartTimeShift: '-30m'
-        spanEndTimeShift: '30m'
+        spanStartTimeShift: "-30m"
+        spanEndTimeShift: "30m"
       lokiSearch:
         datasourceUid: loki
       tracesToLogsV2:
         datasourceUid: loki
-        spanStartTimeShift: '-5m'
-        spanEndTimeShift: '5m'
+        spanStartTimeShift: "-5m"
+        spanEndTimeShift: "5m"
         filterByTraceID: true
         customQuery: true
         query: '{service="${__span.tags.service.name}"} | json | traceId="${__trace.traceId}"'
       tracesToMetrics:
         datasourceUid: prometheus
-        spanStartTimeShift: '-5m'
-        spanEndTimeShift: '5m'
+        spanStartTimeShift: "-5m"
+        spanEndTimeShift: "5m"
         tags:
           - key: service.name
             value: service
         queries:
           - name: Request Rate
-            query: 'sum(rate(traces_spanmetrics_calls_total{$$__tags}[5m]))'
+            query: "sum(rate(traces_spanmetrics_calls_total{$$__tags}[5m]))"
           - name: Error Rate
             query: 'sum(rate(traces_spanmetrics_calls_total{$$__tags, status_code="STATUS_CODE_ERROR"}[5m]))'

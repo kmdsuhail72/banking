@@ -1,7 +1,7 @@
-﻿import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { ExchangeEntity } from '../../entities/exchange.entity';
+﻿import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { ExchangeEntity } from "../../entities/exchange.entity";
 
 /** Currency exchange rates and FX conversion */
 @Injectable()

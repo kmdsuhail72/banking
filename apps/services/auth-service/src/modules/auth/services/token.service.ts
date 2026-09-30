@@ -1,8 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import * as crypto from 'crypto';
-import { appConfig } from '@banking/config';
-import { AuthTokens, JwtPayload, UserRole } from '@banking/shared-types';
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import * as crypto from "crypto";
+import { appConfig } from "@banking/config";
+import { AuthTokens, JwtPayload, UserRole } from "@banking/shared-types";
 
 export interface RefreshTokenPayload {
   sub: string;
@@ -13,7 +13,11 @@ export interface RefreshTokenPayload {
 export class TokenService {
   constructor(private readonly jwtService: JwtService) {}
 
-  generateAccessToken(userId: string, email: string, role: UserRole | string): string {
+  generateAccessToken(
+    userId: string,
+    email: string,
+    role: UserRole | string,
+  ): string {
     const payload: JwtPayload = {
       sub: userId,
       email,
@@ -22,7 +26,7 @@ export class TokenService {
 
     return this.jwtService.sign(payload, {
       secret: appConfig.jwt.accessSecret,
-      expiresIn: '15m',
+      expiresIn: "15m",
     });
   }
 
@@ -34,11 +38,16 @@ export class TokenService {
 
     return this.jwtService.sign(payload, {
       secret: appConfig.jwt.refreshSecret,
-      expiresIn: '7d',
+      expiresIn: "7d",
     });
   }
 
-  generateAuthTokens(userId: string, email: string, role: UserRole | string, sessionId: string): AuthTokens {
+  generateAuthTokens(
+    userId: string,
+    email: string,
+    role: UserRole | string,
+    sessionId: string,
+  ): AuthTokens {
     const accessToken = this.generateAccessToken(userId, email, role);
     const refreshToken = this.generateRefreshToken(userId, sessionId);
 
@@ -55,7 +64,7 @@ export class TokenService {
         secret: appConfig.jwt.accessSecret,
       });
     } catch (err: any) {
-      throw new UnauthorizedException('Invalid or expired access token');
+      throw new UnauthorizedException("Invalid or expired access token");
     }
   }
 
@@ -65,15 +74,15 @@ export class TokenService {
         secret: appConfig.jwt.refreshSecret,
       });
     } catch (err: any) {
-      throw new UnauthorizedException('Invalid or expired refresh token');
+      throw new UnauthorizedException("Invalid or expired refresh token");
     }
   }
 
   hashToken(token: string): string {
-    return crypto.createHash('sha256').update(token).digest('hex');
+    return crypto.createHash("sha256").update(token).digest("hex");
   }
 
   generateRandomToken(bytes: number = 32): string {
-    return crypto.randomBytes(bytes).toString('hex');
+    return crypto.randomBytes(bytes).toString("hex");
   }
 }

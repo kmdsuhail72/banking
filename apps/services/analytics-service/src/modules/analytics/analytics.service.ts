@@ -1,7 +1,7 @@
-﻿import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { AnalyticsEntity } from '../../entities/analytics.entity';
+﻿import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { AnalyticsEntity } from "../../entities/analytics.entity";
 
 /** Spend analytics and category tagging */
 @Injectable()

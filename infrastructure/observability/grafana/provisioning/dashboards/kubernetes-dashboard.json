@@ -1,7 +1,17 @@
 {
   "__inputs": [
-    { "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "pluginId": "prometheus" },
-    { "name": "DS_LOKI",       "label": "Loki",       "type": "datasource", "pluginId": "loki" }
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "type": "datasource",
+      "pluginId": "prometheus"
+    },
+    {
+      "name": "DS_LOKI",
+      "label": "Loki",
+      "type": "datasource",
+      "pluginId": "loki"
+    }
   ],
   "title": "Banking — Kubernetes & HPA",
   "uid": "banking-kubernetes",
@@ -41,132 +51,314 @@
   },
   "panels": [
     {
-      "id": 1, "type": "stat", "title": "Running Pods",
+      "id": 1,
+      "type": "stat",
+      "title": "Running Pods",
       "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{"color":"red","value":null},{"color":"green","value":1}] } } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      },
       "options": { "colorMode": "background" },
-      "targets": [{ "expr": "count(kube_pod_status_phase{namespace=\"$namespace\", phase=\"Running\"})", "legendFormat": "" }]
+      "targets": [
+        {
+          "expr": "count(kube_pod_status_phase{namespace=\"$namespace\", phase=\"Running\"})",
+          "legendFormat": ""
+        }
+      ]
     },
     {
-      "id": 2, "type": "stat", "title": "Pending Pods",
+      "id": 2,
+      "type": "stat",
+      "title": "Pending Pods",
       "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"yellow","value":1},{"color":"red","value":3}] } } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 3 }
+            ]
+          }
+        }
+      },
       "options": { "colorMode": "background" },
-      "targets": [{ "expr": "count(kube_pod_status_phase{namespace=\"$namespace\", phase=\"Pending\"}) or vector(0)", "legendFormat": "" }]
+      "targets": [
+        {
+          "expr": "count(kube_pod_status_phase{namespace=\"$namespace\", phase=\"Pending\"}) or vector(0)",
+          "legendFormat": ""
+        }
+      ]
     },
     {
-      "id": 3, "type": "stat", "title": "Failed Pods",
+      "id": 3,
+      "type": "stat",
+      "title": "Failed Pods",
       "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"red","value":1}] } } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      },
       "options": { "colorMode": "background" },
-      "targets": [{ "expr": "count(kube_pod_status_phase{namespace=\"$namespace\", phase=\"Failed\"}) or vector(0)", "legendFormat": "" }]
+      "targets": [
+        {
+          "expr": "count(kube_pod_status_phase{namespace=\"$namespace\", phase=\"Failed\"}) or vector(0)",
+          "legendFormat": ""
+        }
+      ]
     },
     {
-      "id": 4, "type": "stat", "title": "Total Container Restarts (24h)",
+      "id": 4,
+      "type": "stat",
+      "title": "Total Container Restarts (24h)",
       "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"yellow","value":5},{"color":"red","value":20}] } } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 20 }
+            ]
+          }
+        }
+      },
       "options": { "colorMode": "background" },
-      "targets": [{ "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"$namespace\"}[24h]))", "legendFormat": "" }]
+      "targets": [
+        {
+          "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"$namespace\"}[24h]))",
+          "legendFormat": ""
+        }
+      ]
     },
     {
-      "id": 5, "type": "stat", "title": "HPAs at Max Replicas",
+      "id": 5,
+      "type": "stat",
+      "title": "HPAs at Max Replicas",
       "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"yellow","value":1},{"color":"red","value":3}] } } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 3 }
+            ]
+          }
+        }
+      },
       "options": { "colorMode": "background" },
-      "targets": [{
-        "expr": "count(kube_horizontalpodautoscaler_status_current_replicas{namespace=\"$namespace\"} >= kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"$namespace\"}) or vector(0)",
-        "legendFormat": ""
-      }]
+      "targets": [
+        {
+          "expr": "count(kube_horizontalpodautoscaler_status_current_replicas{namespace=\"$namespace\"} >= kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"$namespace\"}) or vector(0)",
+          "legendFormat": ""
+        }
+      ]
     },
     {
-      "id": 6, "type": "stat", "title": "Not-Ready Pods",
+      "id": 6,
+      "type": "stat",
+      "title": "Not-Ready Pods",
       "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"red","value":1}] } } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      },
       "options": { "colorMode": "background" },
-      "targets": [{ "expr": "count(kube_pod_status_ready{namespace=\"$namespace\", condition=\"true\"} == 0) or vector(0)", "legendFormat": "" }]
+      "targets": [
+        {
+          "expr": "count(kube_pod_status_ready{namespace=\"$namespace\", condition=\"true\"} == 0) or vector(0)",
+          "legendFormat": ""
+        }
+      ]
     },
     {
-      "id": 7, "type": "timeseries", "title": "Replica Count — Desired vs. Ready",
+      "id": 7,
+      "type": "timeseries",
+      "title": "Replica Count — Desired vs. Ready",
       "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 5 } } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2, "fillOpacity": 5 }
+        }
+      },
       "targets": [
-        { "expr": "kube_deployment_spec_replicas{namespace=\"$namespace\", deployment=~\"$deployment\"}", "legendFormat": "desired: {{deployment}}" },
-        { "expr": "kube_deployment_status_replicas_ready{namespace=\"$namespace\", deployment=~\"$deployment\"}", "legendFormat": "ready: {{deployment}}" }
+        {
+          "expr": "kube_deployment_spec_replicas{namespace=\"$namespace\", deployment=~\"$deployment\"}",
+          "legendFormat": "desired: {{deployment}}"
+        },
+        {
+          "expr": "kube_deployment_status_replicas_ready{namespace=\"$namespace\", deployment=~\"$deployment\"}",
+          "legendFormat": "ready: {{deployment}}"
+        }
       ]
     },
     {
-      "id": 8, "type": "timeseries", "title": "HPA — Current vs. Desired vs. Max Replicas",
+      "id": 8,
+      "type": "timeseries",
+      "title": "HPA — Current vs. Desired vs. Max Replicas",
       "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }
+      },
       "targets": [
-        { "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"$namespace\"}", "legendFormat": "current: {{horizontalpodautoscaler}}" },
-        { "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"$namespace\"}", "legendFormat": "desired: {{horizontalpodautoscaler}}" },
-        { "expr": "kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"$namespace\"}", "legendFormat": "max: {{horizontalpodautoscaler}}" }
+        {
+          "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"$namespace\"}",
+          "legendFormat": "current: {{horizontalpodautoscaler}}"
+        },
+        {
+          "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"$namespace\"}",
+          "legendFormat": "desired: {{horizontalpodautoscaler}}"
+        },
+        {
+          "expr": "kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"$namespace\"}",
+          "legendFormat": "max: {{horizontalpodautoscaler}}"
+        }
       ]
     },
     {
-      "id": 9, "type": "timeseries", "title": "HPA CPU Utilization (% of target)",
+      "id": 9,
+      "type": "timeseries",
+      "title": "HPA CPU Utilization (% of target)",
       "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit", "max": 2,
+          "unit": "percentunit",
+          "max": 2,
           "custom": { "lineWidth": 2, "fillOpacity": 10 },
-          "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"yellow","value":0.7},{"color":"red","value":1}] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.7 },
+              { "color": "red", "value": 1 }
+            ]
+          }
         }
       },
-      "targets": [{
-        "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"$namespace\"} / kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"$namespace\"}",
-        "legendFormat": "{{horizontalpodautoscaler}} replica saturation"
-      }]
+      "targets": [
+        {
+          "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"$namespace\"} / kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"$namespace\"}",
+          "legendFormat": "{{horizontalpodautoscaler}} replica saturation"
+        }
+      ]
     },
     {
-      "id": 10, "type": "timeseries", "title": "Container Restarts",
+      "id": 10,
+      "type": "timeseries",
+      "title": "Container Restarts",
       "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 8 } } },
-      "targets": [{
-        "expr": "increase(kube_pod_container_status_restarts_total{namespace=\"$namespace\"}[$__rate_interval])",
-        "legendFormat": "{{pod}} / {{container}}"
-      }]
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2, "fillOpacity": 8 }
+        }
+      },
+      "targets": [
+        {
+          "expr": "increase(kube_pod_container_status_restarts_total{namespace=\"$namespace\"}[$__rate_interval])",
+          "legendFormat": "{{pod}} / {{container}}"
+        }
+      ]
     },
     {
-      "id": 11, "type": "timeseries", "title": "Container CPU Usage",
+      "id": 11,
+      "type": "timeseries",
+      "title": "Container CPU Usage",
       "gridPos": { "x": 0, "y": 28, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "cores", "custom": { "lineWidth": 2 } } },
-      "targets": [{
-        "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"$namespace\", container!=\"\", container!=\"POD\"}[$__rate_interval]))",
-        "legendFormat": "{{pod}}"
-      }]
+      "fieldConfig": {
+        "defaults": { "unit": "cores", "custom": { "lineWidth": 2 } }
+      },
+      "targets": [
+        {
+          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"$namespace\", container!=\"\", container!=\"POD\"}[$__rate_interval]))",
+          "legendFormat": "{{pod}}"
+        }
+      ]
     },
     {
-      "id": 12, "type": "timeseries", "title": "Container Memory Usage",
+      "id": 12,
+      "type": "timeseries",
+      "title": "Container Memory Usage",
       "gridPos": { "x": 12, "y": 28, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "lineWidth": 2 } } },
-      "targets": [{
-        "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"$namespace\", container!=\"\", container!=\"POD\"})",
-        "legendFormat": "{{pod}}"
-      }]
+      "fieldConfig": {
+        "defaults": { "unit": "bytes", "custom": { "lineWidth": 2 } }
+      },
+      "targets": [
+        {
+          "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"$namespace\", container!=\"\", container!=\"POD\"})",
+          "legendFormat": "{{pod}}"
+        }
+      ]
     },
     {
-      "id": 13, "type": "logs", "title": "Kubernetes Events (Warnings)",
+      "id": 13,
+      "type": "logs",
+      "title": "Kubernetes Events (Warnings)",
       "gridPos": { "x": 0, "y": 36, "w": 24, "h": 8 },
       "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
-      "options": { "dedupStrategy": "none", "enableLogDetails": true, "showTime": true, "sortOrder": "Descending" },
-      "targets": [{
-        "expr": "{job=\"banking-containers\"} | json | level = \"ERROR\" | line_format \"[{{.service}}] {{.message}}\"",
-        "legendFormat": ""
-      }]
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "expr": "{job=\"banking-containers\"} | json | level = \"ERROR\" | line_format \"[{{.service}}] {{.message}}\"",
+          "legendFormat": ""
+        }
+      ]
     }
   ]
 }

@@ -1,16 +1,19 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import Redis from 'ioredis';
-import { appConfig } from '@banking/config';
-import { createLogger } from '@banking/logger';
-import { RedisSessionData } from '@banking/shared-types';
+import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import Redis from "ioredis";
+import { appConfig } from "@banking/config";
+import { createLogger } from "@banking/logger";
+import { RedisSessionData } from "@banking/shared-types";
 
 @Injectable()
 export class RedisSessionService implements OnModuleInit, OnModuleDestroy {
   private redis: Redis | null = null;
-  private logger = createLogger('RedisSessionService');
+  private logger = createLogger("RedisSessionService");
   private isConnected = false;
   // In-memory fallback map for offline local testing
-  private inMemoryStore = new Map<string, { data: RedisSessionData; expiresAt: number }>();
+  private inMemoryStore = new Map<
+    string,
+    { data: RedisSessionData; expiresAt: number }
+  >();
 
   async onModuleInit() {
     try {
@@ -23,20 +26,24 @@ export class RedisSessionService implements OnModuleInit, OnModuleDestroy {
         lazyConnect: true,
       });
 
-      this.redis.on('connect', () => {
+      this.redis.on("connect", () => {
         this.isConnected = true;
-        this.logger.info('Connected to Redis for session management');
+        this.logger.info("Connected to Redis for session management");
       });
 
-      this.redis.on('error', (err) => {
+      this.redis.on("error", (err) => {
         this.isConnected = false;
-        this.logger.warn(`Redis connection warning (${err.message}). In-memory session store active.`);
+        this.logger.warn(
+          `Redis connection warning (${err.message}). In-memory session store active.`,
+        );
       });
 
       await this.redis.connect();
     } catch (err: any) {
       this.isConnected = false;
-      this.logger.warn(`Could not connect to Redis at ${appConfig.redis.url} (${err?.message}). Using memory session fallback.`);
+      this.logger.warn(
+        `Could not connect to Redis at ${appConfig.redis.url} (${err?.message}). Using memory session fallback.`,
+      );
     }
   }
 
@@ -65,10 +72,12 @@ export class RedisSessionService implements OnModuleInit, OnModuleDestroy {
 
     if (this.isConnected && this.redis) {
       try {
-        await this.redis.set(key, serialized, 'EX', ttlSeconds);
+        await this.redis.set(key, serialized, "EX", ttlSeconds);
         return;
       } catch (err: any) {
-        this.logger.warn(`Redis set failed (${err.message}), falling back to memory store`);
+        this.logger.warn(
+          `Redis set failed (${err.message}), falling back to memory store`,
+        );
       }
     }
 
@@ -79,7 +88,10 @@ export class RedisSessionService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  async getSession(userId: string, sessionId: string): Promise<RedisSessionData | null> {
+  async getSession(
+    userId: string,
+    sessionId: string,
+  ): Promise<RedisSessionData | null> {
     const key = this.getKey(userId, sessionId);
 
     if (this.isConnected && this.redis) {
@@ -88,7 +100,9 @@ export class RedisSessionService implements OnModuleInit, OnModuleDestroy {
         if (!raw) return null;
         return JSON.parse(raw) as RedisSessionData;
       } catch (err: any) {
-        this.logger.warn(`Redis get failed (${err.message}), falling back to memory store`);
+        this.logger.warn(
+          `Redis get failed (${err.message}), falling back to memory store`,
+        );
       }
     }
 

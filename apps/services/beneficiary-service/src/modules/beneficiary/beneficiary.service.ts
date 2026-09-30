@@ -3,27 +3,27 @@ import {
   ConflictException,
   NotFoundException,
   ForbiddenException,
-} from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, isValidObjectId } from 'mongoose';
-import { Beneficiary, BeneficiaryDocument } from './schemas/beneficiary.schema';
-import { CreateBeneficiaryDto } from './dto/create-beneficiary.dto';
-import { UpdateBeneficiaryDto } from './dto/update-beneficiary.dto';
-import { KafkaEventBus } from '@banking/kafka';
-import { createLogger } from '@banking/logger';
-import { appConfig } from '@banking/config';
+} from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model, isValidObjectId } from "mongoose";
+import { Beneficiary, BeneficiaryDocument } from "./schemas/beneficiary.schema";
+import { CreateBeneficiaryDto } from "./dto/create-beneficiary.dto";
+import { UpdateBeneficiaryDto } from "./dto/update-beneficiary.dto";
+import { KafkaEventBus } from "@banking/kafka";
+import { createLogger } from "@banking/logger";
+import { appConfig } from "@banking/config";
 import {
   KafkaTopics,
   IBeneficiaryAddedPayload,
   IBeneficiaryRemovedPayload,
-} from '@banking/shared-types';
-import { v4 as uuidv4 } from 'uuid';
+} from "@banking/shared-types";
+import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class BeneficiaryService {
-  private logger = createLogger('BeneficiaryService');
+  private logger = createLogger("BeneficiaryService");
   private eventBus = new KafkaEventBus({
-    clientId: 'beneficiary-service',
+    clientId: "beneficiary-service",
     brokers: appConfig.kafka.brokers,
   });
 
@@ -35,7 +35,7 @@ export class BeneficiaryService {
   async onModuleInit() {
     try {
       await this.eventBus.getProducer();
-      this.logger.info('BeneficiaryService Kafka producer connected');
+      this.logger.info("BeneficiaryService Kafka producer connected");
     } catch (err: any) {
       this.logger.warn(`Kafka producer connection warning: ${err.message}`);
     }
@@ -84,13 +84,15 @@ export class BeneficiaryService {
       };
       await this.eventBus.publish(KafkaTopics.BENEFICIARY_ADDED, {
         eventId: uuidv4(),
-        eventType: 'BeneficiaryAdded',
+        eventType: "BeneficiaryAdded",
         version: 1,
         occurredAt: new Date().toISOString(),
         payload,
       });
     } catch (err: any) {
-      this.logger.warn(`Could not dispatch beneficiary.added event: ${err.message}`);
+      this.logger.warn(
+        `Could not dispatch beneficiary.added event: ${err.message}`,
+      );
     }
 
     return beneficiary;
@@ -100,7 +102,10 @@ export class BeneficiaryService {
    * List all beneficiaries for the authenticated user
    */
   async getBeneficiaries(userId: string): Promise<BeneficiaryDocument[]> {
-    return this.beneficiaryModel.find({ userId }).sort({ createdAt: -1 }).exec();
+    return this.beneficiaryModel
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .exec();
   }
 
   /**
@@ -120,7 +125,9 @@ export class BeneficiaryService {
     }
 
     if (beneficiary.userId !== userId) {
-      throw new ForbiddenException('You do not have access to this beneficiary');
+      throw new ForbiddenException(
+        "You do not have access to this beneficiary",
+      );
     }
 
     return beneficiary;
@@ -149,7 +156,10 @@ export class BeneficiaryService {
   /**
    * Remove a beneficiary
    */
-  async removeBeneficiary(id: string, userId: string): Promise<{ message: string }> {
+  async removeBeneficiary(
+    id: string,
+    userId: string,
+  ): Promise<{ message: string }> {
     const beneficiary = await this.getBeneficiaryById(id, userId);
 
     const accountNumber = beneficiary.accountNumber;
@@ -169,27 +179,27 @@ export class BeneficiaryService {
       };
       await this.eventBus.publish(KafkaTopics.BENEFICIARY_REMOVED, {
         eventId: uuidv4(),
-        eventType: 'BeneficiaryRemoved',
+        eventType: "BeneficiaryRemoved",
         version: 1,
         occurredAt: new Date().toISOString(),
         payload,
       });
     } catch (err: any) {
-      this.logger.warn(`Could not dispatch beneficiary.removed event: ${err.message}`);
+      this.logger.warn(
+        `Could not dispatch beneficiary.removed event: ${err.message}`,
+      );
     }
 
-    return { message: 'Beneficiary removed successfully' };
+    return { message: "Beneficiary removed successfully" };
   }
 
   /**
    * Mark a beneficiary as verified (admin / internal use)
    */
   async verifyBeneficiary(id: string): Promise<BeneficiaryDocument> {
-    const beneficiary = await this.beneficiaryModel.findByIdAndUpdate(
-      id,
-      { isVerified: true },
-      { new: true },
-    ).exec();
+    const beneficiary = await this.beneficiaryModel
+      .findByIdAndUpdate(id, { isVerified: true }, { new: true })
+      .exec();
 
     if (!beneficiary) {
       throw new NotFoundException(`Beneficiary '${id}' not found`);

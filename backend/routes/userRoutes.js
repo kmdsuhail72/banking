@@ -4,14 +4,8 @@ const router = express.Router();
 
 const authMiddleware = require("../middleware/authMiddleware");
 
-const {
-  getBalance
-} = require("../controllers/userController");
+const { getBalance } = require("../controllers/userController");
 
-router.get(
-  "/balance",
-  authMiddleware,
-  getBalance
-);
+router.get("/balance", authMiddleware, getBalance);
 
 module.exports = router;

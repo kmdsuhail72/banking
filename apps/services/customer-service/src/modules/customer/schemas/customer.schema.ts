@@ -1,6 +1,6 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
-import { KycStatus } from '@banking/shared-types';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { HydratedDocument } from "mongoose";
+import { KycStatus } from "@banking/shared-types";
 
 export type CustomerDocument = HydratedDocument<Customer>;
 
@@ -22,11 +22,12 @@ export class CustomerAddress {
   country?: string;
 }
 
-export const CustomerAddressSchema = SchemaFactory.createForClass(CustomerAddress);
+export const CustomerAddressSchema =
+  SchemaFactory.createForClass(CustomerAddress);
 
 @Schema({
   timestamps: true,
-  collection: 'customers',
+  collection: "customers",
 })
 export class Customer {
   @Prop({

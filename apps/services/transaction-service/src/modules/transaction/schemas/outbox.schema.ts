@@ -1,11 +1,11 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { HydratedDocument } from "mongoose";
 
 export type OutboxDocument = HydratedDocument<OutboxEvent>;
 
 @Schema({
   timestamps: true,
-  collection: 'outbox_events',
+  collection: "outbox_events",
 })
 export class OutboxEvent {
   @Prop({
@@ -35,8 +35,8 @@ export class OutboxEvent {
 
   @Prop({
     required: true,
-    enum: ['PENDING', 'PUBLISHED', 'FAILED'],
-    default: 'PENDING',
+    enum: ["PENDING", "PUBLISHED", "FAILED"],
+    default: "PENDING",
     index: true,
   })
   status: string;

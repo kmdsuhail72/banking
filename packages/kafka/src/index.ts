@@ -1,7 +1,7 @@
-import { Kafka, Producer, Consumer, EachMessagePayload } from 'kafkajs';
-import { IBankingEvent } from '@banking/shared-types';
-import { createLogger } from '@banking/logger';
-import { EventEmitter } from 'events';
+import { Kafka, Producer, Consumer, EachMessagePayload } from "kafkajs";
+import { IBankingEvent } from "@banking/shared-types";
+import { createLogger } from "@banking/logger";
+import { EventEmitter } from "events";
 
 export interface IKafkaConfig {
   clientId: string;
@@ -16,7 +16,7 @@ export class KafkaEventBus {
   private kafka: Kafka;
   private producer: Producer | null = null;
   private consumer: Consumer | null = null;
-  private logger = createLogger('KafkaEventBus');
+  private logger = createLogger("KafkaEventBus");
   private isConnected = false;
 
   constructor(private config: IKafkaConfig) {
@@ -39,7 +39,9 @@ export class KafkaEventBus {
       this.logger.info(`Kafka producer connected for ${this.config.clientId}`);
       return this.producer;
     } catch (err: any) {
-      this.logger.warn(`Kafka producer connection failed for ${this.config.clientId} (using fallback local event channel): ${err?.message || err}`);
+      this.logger.warn(
+        `Kafka producer connection failed for ${this.config.clientId} (using fallback local event channel): ${err?.message || err}`,
+      );
       this.producer = null;
       return null;
     }
@@ -63,13 +65,18 @@ export class KafkaEventBus {
             },
           ],
         });
-        this.logger.info(`Published event ${event.eventType} to Kafka topic ${topic}`, {
-          eventId: event.eventId,
-          correlationId: event.correlationId,
-        });
+        this.logger.info(
+          `Published event ${event.eventType} to Kafka topic ${topic}`,
+          {
+            eventId: event.eventId,
+            correlationId: event.correlationId,
+          },
+        );
       }
     } catch (err: any) {
-      this.logger.warn(`Failed to publish event to Kafka (${err?.message}), triggering in-process fallback`);
+      this.logger.warn(
+        `Failed to publish event to Kafka (${err?.message}), triggering in-process fallback`,
+      );
     }
 
     // Always emit on local bus so local microservice components stay in sync
@@ -78,10 +85,10 @@ export class KafkaEventBus {
 
   async subscribe(
     topics: string[],
-    handler: (payload: EachMessagePayload) => Promise<void>
+    handler: (payload: EachMessagePayload) => Promise<void>,
   ): Promise<void> {
     if (!this.config.groupId) {
-      throw new Error('Consumer groupId is required for subscribing');
+      throw new Error("Consumer groupId is required for subscribing");
     }
 
     try {
@@ -93,9 +100,11 @@ export class KafkaEventBus {
       await this.consumer.run({
         eachMessage: handler,
       });
-      this.logger.info(`Subscribed to Kafka topics: ${topics.join(', ')}`);
+      this.logger.info(`Subscribed to Kafka topics: ${topics.join(", ")}`);
     } catch (err: any) {
-      this.logger.warn(`Kafka consumer connection failed for group ${this.config.groupId} (${err?.message}). Listening on local event channel fallback.`);
+      this.logger.warn(
+        `Kafka consumer connection failed for group ${this.config.groupId} (${err?.message}). Listening on local event channel fallback.`,
+      );
     }
 
     // Subscribe on local fallback channel
@@ -106,20 +115,22 @@ export class KafkaEventBus {
             topic,
             partition: 0,
             message: {
-              key: Buffer.from(event.correlationId || event.eventId || ''),
+              key: Buffer.from(event.correlationId || event.eventId || ""),
               value: Buffer.from(JSON.stringify(event)),
-              timestamp: (Date.now()).toString(),
+              timestamp: Date.now().toString(),
               attributes: 0,
-              offset: '0',
+              offset: "0",
               headers: {
-                eventType: Buffer.from(event.eventType || ''),
+                eventType: Buffer.from(event.eventType || ""),
               },
             },
             heartbeat: async () => {},
             pause: () => () => {},
           });
         } catch (e: any) {
-          this.logger.error(`Error processing local fallback event on topic ${topic}: ${e?.message}`);
+          this.logger.error(
+            `Error processing local fallback event on topic ${topic}: ${e?.message}`,
+          );
         }
       });
     }
@@ -134,4 +145,3 @@ export class KafkaEventBus {
     }
   }
 }
-

@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsOptional, Length, Matches } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  Length,
+  Matches,
+} from "class-validator";
 
 export class CreateBeneficiaryDto {
   @IsString()
@@ -7,7 +13,7 @@ export class CreateBeneficiaryDto {
 
   @IsString()
   @IsNotEmpty()
-  @Matches(/^[A-Za-z0-9]+$/, { message: 'accountNumber must be alphanumeric' })
+  @Matches(/^[A-Za-z0-9]+$/, { message: "accountNumber must be alphanumeric" })
   accountNumber: string;
 
   @IsString()
@@ -17,7 +23,7 @@ export class CreateBeneficiaryDto {
   @IsString()
   @IsOptional()
   @Matches(/^[A-Z]{4}0[A-Z0-9]{6}$/, {
-    message: 'ifscCode must be a valid IFSC code (e.g. HDFC0001234)',
+    message: "ifscCode must be a valid IFSC code (e.g. HDFC0001234)",
   })
   ifscCode?: string;
 

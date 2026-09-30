@@ -1,10 +1,16 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler, HttpException } from '@nestjs/common';
-import { Observable, of } from 'rxjs';
-import { tap } from 'rxjs/operators';
-import Redis from 'ioredis';
-import { createLogger } from '@banking/logger';
+import {
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+  HttpException,
+} from "@nestjs/common";
+import { Observable, of } from "rxjs";
+import { tap } from "rxjs/operators";
+import Redis from "ioredis";
+import { createLogger } from "@banking/logger";
 
-const logger = createLogger('IdempotencyInterceptor');
+const logger = createLogger("IdempotencyInterceptor");
 
 const IDEMPOTENCY_TTL_SECONDS = 86_400; // 24 hours
 
@@ -24,16 +30,19 @@ const IDEMPOTENCY_TTL_SECONDS = 86_400; // 24 hours
 export class IdempotencyInterceptor implements NestInterceptor {
   constructor(private readonly redis: Redis) {}
 
-  async intercept(ctx: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
-    const req = ctx.switchToHttp().getRequest<import('express').Request>();
-    const res = ctx.switchToHttp().getResponse<import('express').Response>();
+  async intercept(
+    ctx: ExecutionContext,
+    next: CallHandler,
+  ): Promise<Observable<any>> {
+    const req = ctx.switchToHttp().getRequest<import("express").Request>();
+    const res = ctx.switchToHttp().getResponse<import("express").Response>();
 
     // Only meaningful for mutating methods
-    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
       return next.handle();
     }
 
-    const key = req.headers['idempotency-key'] as string | undefined;
+    const key = req.headers["idempotency-key"] as string | undefined;
     if (!key) return next.handle();
 
     const cacheKey = `idempotency:${key}`;
@@ -56,7 +65,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
           await this.redis.set(
             cacheKey,
             JSON.stringify({ status, body }),
-            'EX',
+            "EX",
             IDEMPOTENCY_TTL_SECONDS,
           );
         },
@@ -68,7 +77,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
             await this.redis.set(
               cacheKey,
               JSON.stringify({ status, body }),
-              'EX',
+              "EX",
               300, // short TTL for errors
             );
           }

@@ -21,16 +21,17 @@ scrape_configs:
             values: ["com.docker.compose.project=banking"]
     relabel_configs:
       # Use the compose service name as the job label
-      - source_labels: [__meta_docker_container_label_com_docker_compose_service]
+      - source_labels:
+          [__meta_docker_container_label_com_docker_compose_service]
         target_label: service
       - source_labels: [__meta_docker_container_name]
-        regex: '/?(.*)'
+        regex: "/?(.*)"
         target_label: container
       - source_labels: [__meta_docker_container_id]
         target_label: container_id
       # Drop observability containers' own logs to avoid circular ingestion
       - source_labels: [service]
-        regex: 'loki|promtail|grafana|otel-collector|tempo|prometheus|alertmanager'
+        regex: "loki|promtail|grafana|otel-collector|tempo|prometheus|alertmanager"
         action: drop
     pipeline_stages:
       # Parse JSON logs from @banking/logger
@@ -47,7 +48,7 @@ scrape_configs:
           traceId:
       # Drop noisy health-check logs
       - drop:
-          expression: '.*GET /(health|metrics).*'
+          expression: ".*GET /(health|metrics).*"
       # Set the log timestamp from the JSON field
       - timestamp:
           source: timestamp

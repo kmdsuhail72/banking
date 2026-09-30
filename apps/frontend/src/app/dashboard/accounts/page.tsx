@@ -1,24 +1,33 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { DashboardNav } from '@/components/DashboardNav';
-import { AccountType } from '@banking/shared-types';
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { DashboardNav } from "@/components/DashboardNav";
+import { AccountType } from "@banking/shared-types";
 
 export default function AccountsPage() {
   const router = useRouter();
-  const { user, accounts, totalBalanceMinor, isLoading, createAccount, refreshAccounts } = useAuth();
+  const {
+    user,
+    accounts,
+    totalBalanceMinor,
+    isLoading,
+    createAccount,
+    refreshAccounts,
+  } = useAuth();
   const [isOpeningModal, setIsOpeningModal] = useState(false);
-  const [selectedType, setSelectedType] = useState<AccountType>(AccountType.SAVINGS);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [selectedType, setSelectedType] = useState<AccountType>(
+    AccountType.SAVINGS,
+  );
+  const [errorMsg, setErrorMsg] = useState("");
   const [copiedAccount, setCopiedAccount] = useState<string | null>(null);
 
   // Redirect during render is illegal — use useEffect
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/login');
+      router.push("/login");
     }
   }, [isLoading, user, router]);
 
@@ -36,13 +45,16 @@ export default function AccountsPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg('');
+    setErrorMsg("");
     try {
       await createAccount({ type: selectedType });
       setIsOpeningModal(false);
       await refreshAccounts();
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to create account. You may already have an active account of this type.');
+      setErrorMsg(
+        err.message ||
+          "Failed to create account. You may already have an active account of this type.",
+      );
     }
   };
 
@@ -59,9 +71,12 @@ export default function AccountsPage() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">My Bank Accounts</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              My Bank Accounts
+            </h1>
             <p className="text-slate-400 text-sm mt-1">
-              View account balances, deposit limits, and active multi-currency services.
+              View account balances, deposit limits, and active multi-currency
+              services.
             </p>
           </div>
           <button
@@ -75,14 +90,20 @@ export default function AccountsPage() {
         {/* Total Assets Card */}
         <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-850 border border-slate-800 flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Liquid Balance</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Total Liquid Balance
+            </p>
             <p className="text-3xl font-black text-white mt-1">
-              ₹{(totalBalanceMinor / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              ₹
+              {(totalBalanceMinor / 100).toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+              })}
             </p>
           </div>
           <div className="text-right">
             <span className="text-xs font-bold text-emerald-400 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              {accounts.length} Active {accounts.length === 1 ? 'Account' : 'Accounts'}
+              {accounts.length} Active{" "}
+              {accounts.length === 1 ? "Account" : "Accounts"}
             </span>
           </div>
         </div>
@@ -91,8 +112,12 @@ export default function AccountsPage() {
         {isOpeningModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative">
-              <h2 className="text-xl font-bold text-white">Create New Account</h2>
-              <p className="text-slate-400 text-sm mt-1">Select the account category you wish to open:</p>
+              <h2 className="text-xl font-bold text-white">
+                Create New Account
+              </h2>
+              <p className="text-slate-400 text-sm mt-1">
+                Select the account category you wish to open:
+              </p>
 
               {errorMsg && (
                 <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
@@ -102,15 +127,19 @@ export default function AccountsPage() {
 
               <form onSubmit={handleCreate} className="mt-6 space-y-4">
                 <div className="grid grid-cols-3 gap-3">
-                  {[AccountType.SAVINGS, AccountType.CURRENT, AccountType.SALARY].map((type) => (
+                  {[
+                    AccountType.SAVINGS,
+                    AccountType.CURRENT,
+                    AccountType.SALARY,
+                  ].map((type) => (
                     <button
                       key={type}
                       type="button"
                       onClick={() => setSelectedType(type)}
                       className={`p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                         selectedType === type
-                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                          : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800'
+                          ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+                          : "bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800"
                       }`}
                     >
                       {type}
@@ -123,7 +152,7 @@ export default function AccountsPage() {
                     type="button"
                     onClick={() => {
                       setIsOpeningModal(false);
-                      setErrorMsg('');
+                      setErrorMsg("");
                     }}
                     className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
                   >
@@ -155,9 +184,9 @@ export default function AccountsPage() {
                   </span>
                   <span
                     className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                      acc.status === 'ACTIVE'
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                      acc.status === "ACTIVE"
+                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                        : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
                     }`}
                   >
                     {acc.status}
@@ -166,15 +195,19 @@ export default function AccountsPage() {
 
                 <div className="mt-4 flex items-center justify-between bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-500">Account Number</p>
-                    <p className="font-mono text-sm font-bold text-slate-200 mt-0.5">{acc.accountNumber}</p>
+                    <p className="text-[10px] uppercase font-bold text-slate-500">
+                      Account Number
+                    </p>
+                    <p className="font-mono text-sm font-bold text-slate-200 mt-0.5">
+                      {acc.accountNumber}
+                    </p>
                   </div>
                   <button
                     onClick={() => copyToClipboard(acc.accountNumber)}
                     className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors cursor-pointer"
                     title="Copy Account Number"
                   >
-                    {copiedAccount === acc.accountNumber ? '✓' : 'Copy'}
+                    {copiedAccount === acc.accountNumber ? "✓" : "Copy"}
                   </button>
                 </div>
               </div>
@@ -184,13 +217,20 @@ export default function AccountsPage() {
                   <div>
                     <p className="text-xs text-slate-400">Total Balance</p>
                     <p className="text-2xl font-black text-white tracking-tight mt-0.5">
-                      ₹{((acc.balanceMinor || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      ₹
+                      {((acc.balanceMinor || 0) / 100).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                      })}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] text-slate-500">Available</p>
                     <p className="text-sm font-bold text-emerald-400">
-                      ₹{((acc.availableBalanceMinor || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      ₹
+                      {((acc.availableBalanceMinor || 0) / 100).toLocaleString(
+                        "en-IN",
+                        { minimumFractionDigits: 2 },
+                      )}
                     </p>
                   </div>
                 </div>

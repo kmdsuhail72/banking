@@ -53,13 +53,13 @@ aws dynamodb create-table \
 
 Edit these files and replace the `TODO` values:
 
-| File | Variable | Replace With |
-|---|---|---|
-| `terraform/environments/production/main.tf` | `aws_account_id` | Your real 12-digit AWS account ID |
-| `terraform/environments/production/main.tf` | backend `bucket` | `banking-eks-terraform-state` (created above) |
-| `helm/banking-app/values-production.yaml` | `global.registry` | Output of `terraform output ecr_registry` |
-| `helm/banking-app/values-production.yaml` | `ingress.host` | Your real domain (e.g. `banking.acme.com`) |
-| `.github/workflows/ci.yml` | `AWS_ACCOUNT_ID` | Your real 12-digit AWS account ID |
+| File                                        | Variable          | Replace With                                  |
+| ------------------------------------------- | ----------------- | --------------------------------------------- |
+| `terraform/environments/production/main.tf` | `aws_account_id`  | Your real 12-digit AWS account ID             |
+| `terraform/environments/production/main.tf` | backend `bucket`  | `banking-eks-terraform-state` (created above) |
+| `helm/banking-app/values-production.yaml`   | `global.registry` | Output of `terraform output ecr_registry`     |
+| `helm/banking-app/values-production.yaml`   | `ingress.host`    | Your real domain (e.g. `banking.acme.com`)    |
+| `.github/workflows/ci.yml`                  | `AWS_ACCOUNT_ID`  | Your real 12-digit AWS account ID             |
 
 ## Step 3 — Provision AWS Infrastructure
 
@@ -72,6 +72,7 @@ terraform apply tfplan
 ```
 
 This creates (~10 minutes):
+
 - VPC with 3 AZ public + private subnets
 - NAT Gateways (HA, one per AZ)
 - EKS 1.32 cluster with managed node group (m5.xlarge, 3 nodes)
@@ -119,6 +120,7 @@ helm upgrade --install banking ./helm/banking-app \
 ```
 
 This deploys **~35 pods** in one command:
+
 - 12 service Deployments (2 replicas each) = 24 pods
 - 1 MongoDB + 1 Redis + 1 Kafka StatefulSet = 3 pods
 - 1 frontend Deployment = 2 pods
@@ -157,10 +159,10 @@ git push main
 
 ## File Map
 
-| Layer | Files |
-|---|---|
-| **Terraform** | [`terraform/`](terraform/) — VPC, EKS, ECR, S3, IAM modules |
-| **Helm Chart** | [`helm/banking-app/`](helm/banking-app/) — 63 K8s objects |
-| **Values** | [`values.yaml`](helm/banking-app/values.yaml) · [`values-production.yaml`](helm/banking-app/values-production.yaml) · [`values-staging.yaml`](helm/banking-app/values-staging.yaml) |
-| **CI/CD** | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — lint + build + ECR push |
-| **GitOps** | [`gitops/environments/`](gitops/environments/) — ArgoCD Helm-based promotion |
+| Layer          | Files                                                                                                                                                                               |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Terraform**  | [`terraform/`](terraform/) — VPC, EKS, ECR, S3, IAM modules                                                                                                                         |
+| **Helm Chart** | [`helm/banking-app/`](helm/banking-app/) — 63 K8s objects                                                                                                                           |
+| **Values**     | [`values.yaml`](helm/banking-app/values.yaml) · [`values-production.yaml`](helm/banking-app/values-production.yaml) · [`values-staging.yaml`](helm/banking-app/values-staging.yaml) |
+| **CI/CD**      | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — lint + build + ECR push                                                                                                    |
+| **GitOps**     | [`gitops/environments/`](gitops/environments/) — ArgoCD Helm-based promotion                                                                                                        |

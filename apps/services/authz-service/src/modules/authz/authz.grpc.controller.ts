@@ -1,6 +1,6 @@
-﻿import { Controller } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
-import { AuthzService } from './authz.service';
+﻿import { Controller } from "@nestjs/common";
+import { GrpcMethod } from "@nestjs/microservices";
+import { AuthzService } from "./authz.service";
 
 /** gRPC server-side controller for AuthzService proto */
 @Controller()

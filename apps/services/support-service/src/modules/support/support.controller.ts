@@ -1,12 +1,12 @@
-﻿import { Controller, Get, UseGuards } from '@nestjs/common';
-import { SupportService } from './support.service';
+﻿import { Controller, Get, UseGuards } from "@nestjs/common";
+import { SupportService } from "./support.service";
 
-@Controller('support')
+@Controller("support")
 export class SupportController {
   constructor(private readonly service: SupportService) {}
 
   @Get()
   async findAll() {
-    return { message: 'Customer support tickets endpoint', data: [] };
+    return { message: "Customer support tickets endpoint", data: [] };
   }
 }

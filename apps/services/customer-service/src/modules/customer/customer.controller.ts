@@ -10,35 +10,38 @@ import {
   UnauthorizedException,
   HttpCode,
   HttpStatus,
-} from '@nestjs/common';
-import { CustomerService } from './customer.service';
-import { CreateCustomerRequestDto } from './dto/create-customer.dto';
-import { UpdateCustomerRequestDto } from './dto/update-customer.dto';
-import { SubmitKycRequestDto } from './dto/submit-kyc.dto';
-import * as jwt from 'jsonwebtoken';
-import { appConfig } from '@banking/config';
-import { JwtPayload } from '@banking/shared-types';
+} from "@nestjs/common";
+import { CustomerService } from "./customer.service";
+import { CreateCustomerRequestDto } from "./dto/create-customer.dto";
+import { UpdateCustomerRequestDto } from "./dto/update-customer.dto";
+import { SubmitKycRequestDto } from "./dto/submit-kyc.dto";
+import * as jwt from "jsonwebtoken";
+import { appConfig } from "@banking/config";
+import { JwtPayload } from "@banking/shared-types";
 
-@Controller('customers')
+@Controller("customers")
 export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 
   private extractUserId(req: any, headers: Record<string, string>): string {
-    const headerUserId = headers['x-user-id'];
+    const headerUserId = headers["x-user-id"];
     if (headerUserId) return headerUserId;
 
-    const authHeader = headers['authorization'];
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    const authHeader = headers["authorization"];
+    if (authHeader && authHeader.startsWith("Bearer ")) {
       const token = authHeader.substring(7);
       try {
-        const decoded = jwt.verify(token, appConfig.jwt.accessSecret) as JwtPayload;
+        const decoded = jwt.verify(
+          token,
+          appConfig.jwt.accessSecret,
+        ) as JwtPayload;
         return decoded.sub;
       } catch {
-        throw new UnauthorizedException('Invalid access token');
+        throw new UnauthorizedException("Invalid access token");
       }
     }
 
-    throw new UnauthorizedException('User authentication required');
+    throw new UnauthorizedException("User authentication required");
   }
 
   /**
@@ -53,7 +56,7 @@ export class CustomerController {
   /**
    * GET /customers/me — returns the authenticated user's customer profile
    */
-  @Get('me')
+  @Get("me")
   async getMe(@Req() req: any, @Headers() headers: Record<string, string>) {
     const userId = this.extractUserId(req, headers);
     return this.customerService.getMe(userId);
@@ -62,7 +65,7 @@ export class CustomerController {
   /**
    * PATCH /customers/me — self-service profile update
    */
-  @Patch('me')
+  @Patch("me")
   async updateMe(
     @Req() req: any,
     @Headers() headers: Record<string, string>,
@@ -75,7 +78,7 @@ export class CustomerController {
   /**
    * POST /customers/me/kyc — submit KYC document for verification
    */
-  @Post('me/kyc')
+  @Post("me/kyc")
   @HttpCode(HttpStatus.OK)
   async submitKyc(
     @Req() req: any,
@@ -89,17 +92,17 @@ export class CustomerController {
   /**
    * GET /customers/:id — admin/internal lookup by MongoDB ID
    */
-  @Get(':id')
-  async getCustomerById(@Param('id') id: string) {
+  @Get(":id")
+  async getCustomerById(@Param("id") id: string) {
     return this.customerService.getCustomerById(id);
   }
 
   /**
    * PATCH /customers/:id — admin profile update by ID
    */
-  @Patch(':id')
+  @Patch(":id")
   async updateCustomer(
-    @Param('id') id: string,
+    @Param("id") id: string,
     @Body() dto: UpdateCustomerRequestDto,
   ) {
     return this.customerService.updateCustomer(id, dto);

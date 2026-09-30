@@ -1,16 +1,20 @@
-﻿import { startTelemetry, installMetrics, installTelemetryShutdown } from '@banking/observability';
-startTelemetry('api-gateway');
-import 'reflect-metadata';
-import { NestFactory } from '@nestjs/core';
-import cookieParser from 'cookie-parser';
-import { AppModule } from './app.module';
-import { appConfig } from '@banking/config';
-import { createLogger } from '@banking/logger';
+﻿import {
+  startTelemetry,
+  installMetrics,
+  installTelemetryShutdown,
+} from "@banking/observability";
+startTelemetry("api-gateway");
+import "reflect-metadata";
+import { NestFactory } from "@nestjs/core";
+import cookieParser from "cookie-parser";
+import { AppModule } from "./app.module";
+import { appConfig } from "@banking/config";
+import { createLogger } from "@banking/logger";
 
 async function bootstrap() {
-  const logger = createLogger('API-Gateway');
+  const logger = createLogger("API-Gateway");
   const app = await NestFactory.create(AppModule);
-  installMetrics(app, 'api-gateway');
+  installMetrics(app, "api-gateway");
   installTelemetryShutdown(app);
 
   app.use(cookieParser());
@@ -28,4 +32,3 @@ async function bootstrap() {
 }
 
 bootstrap();
-

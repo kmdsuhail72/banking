@@ -1,12 +1,12 @@
-﻿import { Controller, Get, UseGuards } from '@nestjs/common';
-import { CardService } from './card.service';
+﻿import { Controller, Get, UseGuards } from "@nestjs/common";
+import { CardService } from "./card.service";
 
-@Controller('card')
+@Controller("card")
 export class CardController {
   constructor(private readonly service: CardService) {}
 
   @Get()
   async findAll() {
-    return { message: 'Card issuance and management endpoint', data: [] };
+    return { message: "Card issuance and management endpoint", data: [] };
   }
 }

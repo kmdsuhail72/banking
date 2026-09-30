@@ -1,33 +1,33 @@
-'use client';
+"use client";
 
-import React, { useState, useMemo } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { 
-  Zap, 
-  Lock, 
-  Mail, 
-  User, 
-  Eye, 
-  EyeOff, 
-  ArrowRight, 
-  ShieldCheck, 
+import React, { useState, useMemo } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import {
+  Zap,
+  Lock,
+  Mail,
+  User,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  ShieldCheck,
   AlertCircle,
   CheckCircle2,
   XCircle,
-  Sparkles
-} from 'lucide-react';
+  Sparkles,
+} from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { register, login } = useAuth();
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [optInEmails, setOptInEmails] = useState(true);
@@ -58,11 +58,11 @@ export default function RegisterPage() {
   }, [passwordChecks]);
 
   const passwordStrengthLabel = useMemo(() => {
-    if (passwordScore <= 20) return { text: 'Very Weak', color: 'bg-rose-500' };
-    if (passwordScore <= 40) return { text: 'Weak', color: 'bg-orange-500' };
-    if (passwordScore <= 60) return { text: 'Fair', color: 'bg-yellow-500' };
-    if (passwordScore <= 80) return { text: 'Strong', color: 'bg-emerald-400' };
-    return { text: 'Very Strong', color: 'bg-cyan-400' };
+    if (passwordScore <= 20) return { text: "Very Weak", color: "bg-rose-500" };
+    if (passwordScore <= 40) return { text: "Weak", color: "bg-orange-500" };
+    if (passwordScore <= 60) return { text: "Fair", color: "bg-yellow-500" };
+    if (passwordScore <= 80) return { text: "Strong", color: "bg-emerald-400" };
+    return { text: "Very Strong", color: "bg-cyan-400" };
   }, [passwordScore]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,17 +70,19 @@ export default function RegisterPage() {
     setError(null);
 
     if (!agreeTerms) {
-      setError('You must agree to the Terms of Service to continue.');
+      setError("You must agree to the Terms of Service to continue.");
       return;
     }
 
     if (passwordScore < 80) {
-      setError('Please ensure your password meets all complexity requirements.');
+      setError(
+        "Please ensure your password meets all complexity requirements.",
+      );
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError("Passwords do not match.");
       return;
     }
 
@@ -99,13 +101,15 @@ export default function RegisterPage() {
       setTimeout(async () => {
         try {
           await login({ email: email.trim(), password });
-          router.push('/dashboard');
+          router.push("/dashboard");
         } catch {
-          router.push('/login');
+          router.push("/login");
         }
       }, 1500);
     } catch (err: any) {
-      setError(err.message || 'Registration failed. Please check your details.');
+      setError(
+        err.message || "Registration failed. Please check your details.",
+      );
       setIsSubmitting(false);
     }
   };
@@ -126,7 +130,10 @@ export default function RegisterPage() {
               </div>
             </div>
             <span className="text-2xl font-black tracking-tight text-white">
-              Nova<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Bank</span>
+              Nova
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
+                Bank
+              </span>
             </span>
           </Link>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white pt-2">
@@ -144,7 +151,9 @@ export default function RegisterPage() {
               <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
               <div>
                 <p className="font-semibold">Account created successfully!</p>
-                <p className="text-slate-400">Publishing user.registered event & logging you in...</p>
+                <p className="text-slate-400">
+                  Publishing user.registered event & logging you in...
+                </p>
               </div>
             </div>
           )}
@@ -227,7 +236,7 @@ export default function RegisterPage() {
                 </div>
                 <input
                   id="register-password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   required
                   placeholder="Create a strong password"
                   value={password}
@@ -265,20 +274,44 @@ export default function RegisterPage() {
 
                   {/* Checklist requirements */}
                   <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
-                    <div className={`flex items-center space-x-1.5 ${passwordChecks.length ? 'text-emerald-400' : 'text-slate-500'}`}>
-                      {passwordChecks.length ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                    <div
+                      className={`flex items-center space-x-1.5 ${passwordChecks.length ? "text-emerald-400" : "text-slate-500"}`}
+                    >
+                      {passwordChecks.length ? (
+                        <CheckCircle2 className="w-3 h-3" />
+                      ) : (
+                        <XCircle className="w-3 h-3" />
+                      )}
                       <span>8+ Characters</span>
                     </div>
-                    <div className={`flex items-center space-x-1.5 ${passwordChecks.uppercase ? 'text-emerald-400' : 'text-slate-500'}`}>
-                      {passwordChecks.uppercase ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                    <div
+                      className={`flex items-center space-x-1.5 ${passwordChecks.uppercase ? "text-emerald-400" : "text-slate-500"}`}
+                    >
+                      {passwordChecks.uppercase ? (
+                        <CheckCircle2 className="w-3 h-3" />
+                      ) : (
+                        <XCircle className="w-3 h-3" />
+                      )}
                       <span>Uppercase Letter</span>
                     </div>
-                    <div className={`flex items-center space-x-1.5 ${passwordChecks.number ? 'text-emerald-400' : 'text-slate-500'}`}>
-                      {passwordChecks.number ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                    <div
+                      className={`flex items-center space-x-1.5 ${passwordChecks.number ? "text-emerald-400" : "text-slate-500"}`}
+                    >
+                      {passwordChecks.number ? (
+                        <CheckCircle2 className="w-3 h-3" />
+                      ) : (
+                        <XCircle className="w-3 h-3" />
+                      )}
                       <span>Number</span>
                     </div>
-                    <div className={`flex items-center space-x-1.5 ${passwordChecks.special ? 'text-emerald-400' : 'text-slate-500'}`}>
-                      {passwordChecks.special ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                    <div
+                      className={`flex items-center space-x-1.5 ${passwordChecks.special ? "text-emerald-400" : "text-slate-500"}`}
+                    >
+                      {passwordChecks.special ? (
+                        <CheckCircle2 className="w-3 h-3" />
+                      ) : (
+                        <XCircle className="w-3 h-3" />
+                      )}
                       <span>Special Symbol</span>
                     </div>
                   </div>
@@ -297,7 +330,7 @@ export default function RegisterPage() {
                 </div>
                 <input
                   id="register-confirm-password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   required
                   placeholder="Re-enter your password"
                   value={confirmPassword}
@@ -318,9 +351,15 @@ export default function RegisterPage() {
                   className="mt-0.5 rounded border-white/10 bg-slate-950 text-indigo-600 focus:ring-indigo-500"
                 />
                 <span>
-                  I agree to NovaBank&apos;s{' '}
-                  <span className="text-indigo-400 underline">Terms of Service</span> and{' '}
-                  <span className="text-indigo-400 underline">Privacy Policy</span>.
+                  I agree to NovaBank&apos;s{" "}
+                  <span className="text-indigo-400 underline">
+                    Terms of Service
+                  </span>{" "}
+                  and{" "}
+                  <span className="text-indigo-400 underline">
+                    Privacy Policy
+                  </span>
+                  .
                 </span>
               </label>
 
@@ -331,7 +370,9 @@ export default function RegisterPage() {
                   onChange={(e) => setOptInEmails(e.target.checked)}
                   className="rounded border-white/10 bg-slate-950 text-indigo-600 focus:ring-indigo-500"
                 />
-                <span>Send me occasional product updates & security alerts</span>
+                <span>
+                  Send me occasional product updates & security alerts
+                </span>
               </label>
             </div>
 
@@ -356,7 +397,7 @@ export default function RegisterPage() {
           {/* Footer separator */}
           <div className="pt-4 border-t border-white/10 text-center">
             <p className="text-xs text-slate-400">
-              Already have an account?{' '}
+              Already have an account?{" "}
               <Link
                 href="/login"
                 className="text-indigo-400 hover:text-indigo-300 font-semibold transition"
@@ -370,7 +411,10 @@ export default function RegisterPage() {
         {/* Security Badge */}
         <div className="flex items-center justify-center space-x-2 text-[11px] text-slate-500">
           <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Automated Kafka Event Pipeline • Instant Customer Profile Scaffolding</span>
+          <span>
+            Automated Kafka Event Pipeline • Instant Customer Profile
+            Scaffolding
+          </span>
         </div>
       </div>
     </main>

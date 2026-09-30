@@ -52,8 +52,7 @@ kind: AuthorizationPolicy
 metadata:
   name: banking-default-deny
   namespace: banking
-spec:
-  {}  # Empty spec = deny all by default
+spec: {} # Empty spec = deny all by default
 
 ---
 apiVersion: security.istio.io/v1beta1
@@ -229,4 +228,4 @@ spec:
   tracing:
     - providers:
         - name: "jaeger"
-      randomSamplingPercentage: 10.0  # 10% sampling in production
+      randomSamplingPercentage: 10.0 # 10% sampling in production

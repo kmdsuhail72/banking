@@ -9,7 +9,7 @@
 [![Kafka](https://img.shields.io/badge/Event%20Mesh-Apache%20Kafka-231F20?style=flat&logo=apachekafka)](https://kafka.apache.org/)
 [![MongoDB 8](https://img.shields.io/badge/Database-MongoDB%208-47A248?style=flat&logo=mongodb)](https://www.mongodb.com/)
 [![Redis 8](https://img.shields.io/badge/Cache-Redis%208-DC382D?style=flat&logo=redis)](https://redis.io/)
-[![Compliance](https://img.shields.io/badge/Compliance-SOC2%20%7C%20PCI--DSS%204.0%20Ready-10B981?style=flat)]()
+[![Compliance](https://img.shields.io/badge/Compliance-SOC2%20%7C%20PCI--DSS%204.0%20Ready-10B981?style=flat)](<>)
 
 ---
 
@@ -29,24 +29,25 @@
 
 The platform includes a developer-aesthetic landing page, an interactive authenticated banking portal, and 11 containerized NestJS microservices.
 
-| Application Layer | URL | Status | Description |
-| :--- | :--- | :---: | :--- |
-| **Developer Marketing & Overview** | [http://localhost:3001/](http://localhost:3001/) | 🟢 Live | High-scale B2B overview, live telemetry catalog, architecture bento grid & interactive quickstart terminal |
-| **Authentication Portal** | [http://localhost:3001/login](http://localhost:3001/login) | 🟢 Live | Secure sign-in with ⚡ **One-Click Demo Showcase** launcher |
-| **Banking Dashboard** | [http://localhost:3001/dashboard](http://localhost:3001/dashboard) | 🟢 Live | Net worth summary, multi-account cards, quick actions & transactions |
-| **Accounts Management** | [http://localhost:3001/dashboard/accounts](http://localhost:3001/dashboard/accounts) | 🟢 Live | Savings, Current & Salary account manager with IBAN copy |
-| **Funds Transfer Engine** | [http://localhost:3001/dashboard/transfer](http://localhost:3001/dashboard/transfer) | 🟢 Live | 2-phase fund transfer with distributed idempotency checks |
-| **Deposit & Cash Management** | [http://localhost:3001/dashboard/deposit](http://localhost:3001/dashboard/deposit) | 🟢 Live | Balance crediting with real-time balance propagation |
-| **ATM / Branch Withdrawal** | [http://localhost:3001/dashboard/withdraw](http://localhost:3001/dashboard/withdraw) | 🟢 Live | Real-time debit engine with overdraft prevention |
-| **Ledger & Transactions** | [http://localhost:3001/dashboard/transactions](http://localhost:3001/dashboard/transactions) | 🟢 Live | Filterable transaction logs with status badges & metadata |
-| **Customer Profile** | [http://localhost:3001/profile](http://localhost:3001/profile) | 🟢 Live | KYC status, address details & risk scoring parameters |
-| **API Gateway Proxy** | [http://localhost:3000](http://localhost:3000) | 🟢 Live | Reverse proxy with rate-limiting & correlation ID tracking |
+| Application Layer                  | URL                                                                                          | Status  | Description                                                                                                |
+| :--------------------------------- | :------------------------------------------------------------------------------------------- | :-----: | :--------------------------------------------------------------------------------------------------------- |
+| **Developer Marketing & Overview** | [http://localhost:3001/](http://localhost:3001/)                                             | 🟢 Live | High-scale B2B overview, live telemetry catalog, architecture bento grid & interactive quickstart terminal |
+| **Authentication Portal**          | [http://localhost:3001/login](http://localhost:3001/login)                                   | 🟢 Live | Secure sign-in with ⚡ **One-Click Demo Showcase** launcher                                                |
+| **Banking Dashboard**              | [http://localhost:3001/dashboard](http://localhost:3001/dashboard)                           | 🟢 Live | Net worth summary, multi-account cards, quick actions & transactions                                       |
+| **Accounts Management**            | [http://localhost:3001/dashboard/accounts](http://localhost:3001/dashboard/accounts)         | 🟢 Live | Savings, Current & Salary account manager with IBAN copy                                                   |
+| **Funds Transfer Engine**          | [http://localhost:3001/dashboard/transfer](http://localhost:3001/dashboard/transfer)         | 🟢 Live | 2-phase fund transfer with distributed idempotency checks                                                  |
+| **Deposit & Cash Management**      | [http://localhost:3001/dashboard/deposit](http://localhost:3001/dashboard/deposit)           | 🟢 Live | Balance crediting with real-time balance propagation                                                       |
+| **ATM / Branch Withdrawal**        | [http://localhost:3001/dashboard/withdraw](http://localhost:3001/dashboard/withdraw)         | 🟢 Live | Real-time debit engine with overdraft prevention                                                           |
+| **Ledger & Transactions**          | [http://localhost:3001/dashboard/transactions](http://localhost:3001/dashboard/transactions) | 🟢 Live | Filterable transaction logs with status badges & metadata                                                  |
+| **Customer Profile**               | [http://localhost:3001/profile](http://localhost:3001/profile)                               | 🟢 Live | KYC status, address details & risk scoring parameters                                                      |
+| **API Gateway Proxy**              | [http://localhost:3000](http://localhost:3000)                                               | 🟢 Live | Reverse proxy with rate-limiting & correlation ID tracking                                                 |
 
 ---
 
 ## ✨ Key Platform Features
 
 ### 1. ⚡ Interactive Demo Showcase (Preloaded Mock Engine)
+
 - **Instant Access**: Click **"Launch Demo Showcase (Arjun Mehta)"** on the Login page to explore the full dashboard without creating a backend account.
 - **Pre-populated Dataset**:
   - **Verified Profile**: Arjun Mehta (`arjun.mehta@novabank.demo`, KYC Verified, Mumbai, India).
@@ -59,10 +60,12 @@ The platform includes a developer-aesthetic landing page, an interactive authent
 - **Dynamic Simulation**: Live deposits, withdrawals, transfers, and new account openings persist in the demo session and update balances in real time.
 
 ### 2. 🌓 Dual Dark & Bright Theme System
+
 - Seamlessly toggle between **🌙 Dark (Obsidian #080B10)** and **☀️ Bright** themes via the top navigation bar.
 - Choice is persisted in `localStorage` across page reloads.
 
 ### 3. 🎯 Principal Designer Developer Landing Page
+
 - **Hero Sandbox**: Minimalist IDE aesthetics, interactive command snippet (`pnpm install && pnpm dev`) with clipboard copy feedback.
 - **Interactive Monorepo Navigator**: Interactive visual explorer for `apps/`, `packages/`, and `infrastructure/`.
 - **Live Telemetry & Port Catalog**: Real-time status cards with blinking telemetry pulse dots, HTTP/gRPC ports, and micro-sparkline graphs.
@@ -110,31 +113,32 @@ cloud-banking-platform/
 
 ## 🚀 Service Port & Telemetry Catalog
 
-| Service | HTTP Port | gRPC Port | Protocol | SLA Uptime | Latency | Status |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **API Gateway** | `3000` | - | HTTP / REST | 99.99% | < 1.2ms | 🟢 Ready |
-| **Frontend (Next.js 15)** | `3001` | - | HTTP / SSR | 99.99% | < 0.9ms | 🟢 Ready |
-| **Auth Service** | `4001` | `50051` | REST / gRPC | 99.99% | 0.42ms | 🟢 Ready |
-| **Customer Service** | `4002` | `50052` | REST / gRPC | 99.99% | 0.58ms | 🟢 Ready |
-| **Account Service** | `4003` | `50053` | REST / gRPC | 99.98% | 0.39ms | 🟢 Ready |
-| **Transaction Service** | `4004` | `50054` | REST / gRPC | 99.99% | 0.61ms | 🟢 Ready |
-| **Ledger Service** | `4005` | `50055` | REST / gRPC | 99.99% | 0.34ms | 🟢 Ready |
-| **Payment Service** | `4006` | `50056` | REST / gRPC | 99.97% | 0.85ms | 🟢 Ready |
-| **Wallet Service** | `4007` | `50057` | REST / gRPC | 99.99% | 0.45ms | 🟢 Ready |
-| **Beneficiary Service** | `4008` | `50058` | REST / gRPC | 99.98% | 0.51ms | 🟢 Ready |
-| **Notification Service** | `4009` | `50059` | REST / gRPC | 99.99% | 0.72ms | 🟢 Ready |
-| **KYC Risk Service** | `4010` | `50060` | REST / gRPC | 99.99% | 0.68ms | 🟢 Ready |
-| **Reporting Service** | `4011` | `50061` | REST / gRPC | 99.96% | 0.92ms | 🟢 Ready |
-| **MongoDB 8.0** | `27017` | - | TCP | 99.99% | - | 🟢 Healthy |
-| **Redis 8.0** | `6379` | - | TCP | 99.99% | - | 🟢 Healthy |
-| **Apache Kafka Broker** | `9092` | - | TCP | 99.99% | - | 🟢 Healthy |
-| **Zookeeper** | `2181` | - | TCP | 99.99% | - | 🟢 Healthy |
+| Service                   | HTTP Port | gRPC Port |  Protocol   | SLA Uptime | Latency |   Status   |
+| :------------------------ | :-------: | :-------: | :---------: | :--------: | :-----: | :--------: |
+| **API Gateway**           |  `3000`   |     -     | HTTP / REST |   99.99%   | < 1.2ms |  🟢 Ready  |
+| **Frontend (Next.js 15)** |  `3001`   |     -     | HTTP / SSR  |   99.99%   | < 0.9ms |  🟢 Ready  |
+| **Auth Service**          |  `4001`   |  `50051`  | REST / gRPC |   99.99%   | 0.42ms  |  🟢 Ready  |
+| **Customer Service**      |  `4002`   |  `50052`  | REST / gRPC |   99.99%   | 0.58ms  |  🟢 Ready  |
+| **Account Service**       |  `4003`   |  `50053`  | REST / gRPC |   99.98%   | 0.39ms  |  🟢 Ready  |
+| **Transaction Service**   |  `4004`   |  `50054`  | REST / gRPC |   99.99%   | 0.61ms  |  🟢 Ready  |
+| **Ledger Service**        |  `4005`   |  `50055`  | REST / gRPC |   99.99%   | 0.34ms  |  🟢 Ready  |
+| **Payment Service**       |  `4006`   |  `50056`  | REST / gRPC |   99.97%   | 0.85ms  |  🟢 Ready  |
+| **Wallet Service**        |  `4007`   |  `50057`  | REST / gRPC |   99.99%   | 0.45ms  |  🟢 Ready  |
+| **Beneficiary Service**   |  `4008`   |  `50058`  | REST / gRPC |   99.98%   | 0.51ms  |  🟢 Ready  |
+| **Notification Service**  |  `4009`   |  `50059`  | REST / gRPC |   99.99%   | 0.72ms  |  🟢 Ready  |
+| **KYC Risk Service**      |  `4010`   |  `50060`  | REST / gRPC |   99.99%   | 0.68ms  |  🟢 Ready  |
+| **Reporting Service**     |  `4011`   |  `50061`  | REST / gRPC |   99.96%   | 0.92ms  |  🟢 Ready  |
+| **MongoDB 8.0**           |  `27017`  |     -     |     TCP     |   99.99%   |    -    | 🟢 Healthy |
+| **Redis 8.0**             |  `6379`   |     -     |     TCP     |   99.99%   |    -    | 🟢 Healthy |
+| **Apache Kafka Broker**   |  `9092`   |     -     |     TCP     |   99.99%   |    -    | 🟢 Healthy |
+| **Zookeeper**             |  `2181`   |     -     |     TCP     |   99.99%   |    -    | 🟢 Healthy |
 
 ---
 
 ## 💻 Getting Started & Local Setup
 
 ### Prerequisites
+
 - **Node.js**: `v20.x` or `v22.x`
 - **PNPM**: `v9.x` or `v11.x` (`corepack enable pnpm`)
 - **Docker Desktop**: For MongoDB, Redis & Kafka containers
@@ -156,6 +160,7 @@ pnpm dev
 ```
 
 The services will spin up in parallel:
+
 - Web App: [http://localhost:3001](http://localhost:3001)
 - API Gateway: [http://localhost:3000](http://localhost:3000)
 - Microservices: [http://localhost:4001](http://localhost:4001) through `http://localhost:4011`
@@ -171,6 +176,7 @@ node test-customer-api.js
 ```
 
 **Expected Output:**
+
 ```text
 ============================================================
 CUSTOMER SERVICE API TEST SUITE

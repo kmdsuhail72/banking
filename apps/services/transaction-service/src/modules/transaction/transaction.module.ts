@@ -1,13 +1,16 @@
-import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Transaction, TransactionSchema } from './schemas/transaction.schema';
-import { IdempotencyKey, IdempotencySchema } from './schemas/idempotency.schema';
-import { OutboxEvent, OutboxSchema } from './schemas/outbox.schema';
-import { TransactionService } from './transaction.service';
-import { TransactionController } from './transaction.controller';
-import { IdempotencyService } from './services/idempotency.service';
-import { OutboxService } from './services/outbox.service';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { Module } from "@nestjs/common";
+import { MongooseModule } from "@nestjs/mongoose";
+import { Transaction, TransactionSchema } from "./schemas/transaction.schema";
+import {
+  IdempotencyKey,
+  IdempotencySchema,
+} from "./schemas/idempotency.schema";
+import { OutboxEvent, OutboxSchema } from "./schemas/outbox.schema";
+import { TransactionService } from "./transaction.service";
+import { TransactionController } from "./transaction.controller";
+import { IdempotencyService } from "./services/idempotency.service";
+import { OutboxService } from "./services/outbox.service";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 
 @Module({
   imports: [

@@ -1,6 +1,6 @@
-﻿import { Controller } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
-import { DocumentService } from './document.service';
+﻿import { Controller } from "@nestjs/common";
+import { GrpcMethod } from "@nestjs/microservices";
+import { DocumentService } from "./document.service";
 
 /** gRPC server-side controller for DocumentService proto */
 @Controller()

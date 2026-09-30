@@ -136,9 +136,15 @@ export function installMetrics(
     res.once("finish", () => {
       activeRequests.dec({ method: req.method });
       const route = req.route?.path || "unmatched";
-      const method = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"].includes(
-        req.method,
-      )
+      const method = [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "OPTIONS",
+        "HEAD",
+      ].includes(req.method)
         ? req.method
         : "OTHER";
       const labels = {

@@ -11,9 +11,9 @@ global:
   namespace: banking
 
   # AWS — used by External Secrets Operator and IRSA annotations
-  clusterName:        "banking-eks-production"       # must match Terraform cluster_name + environment
-  awsRegion:          "us-east-1"
-  appSecretsRoleArn:  ""   # TODO: set to terraform output app_secrets_role_arn
+  clusterName: "banking-eks-production" # must match Terraform cluster_name + environment
+  awsRegion: "us-east-1"
+  appSecretsRoleArn: "" # TODO: set to terraform output app_secrets_role_arn
 
   otel:
     endpoint: "http://otel-collector.observability.svc.cluster.local:4318"
@@ -44,8 +44,14 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "500m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "500m", memory: "512Mi" }
+    hpa:
+      {
+        minReplicas: 2,
+        maxReplicas: 10,
+        cpuUtilization: 70,
+        memUtilization: 80,
+      }
 
   auth:
     enabled: true
@@ -54,8 +60,14 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "500m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "500m", memory: "512Mi" }
+    hpa:
+      {
+        minReplicas: 2,
+        maxReplicas: 10,
+        cpuUtilization: 70,
+        memUtilization: 80,
+      }
 
   customer:
     enabled: true
@@ -64,8 +76,14 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "500m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "500m", memory: "512Mi" }
+    hpa:
+      {
+        minReplicas: 2,
+        maxReplicas: 10,
+        cpuUtilization: 70,
+        memUtilization: 80,
+      }
 
   account:
     enabled: true
@@ -74,8 +92,14 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "500m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "500m", memory: "512Mi" }
+    hpa:
+      {
+        minReplicas: 2,
+        maxReplicas: 10,
+        cpuUtilization: 70,
+        memUtilization: 80,
+      }
 
   transaction:
     enabled: true
@@ -84,8 +108,14 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "200m", memory: "384Mi" }
-      limits:   { cpu: "800m", memory: "768Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 15, cpuUtilization: 65, memUtilization: 75 }
+      limits: { cpu: "800m", memory: "768Mi" }
+    hpa:
+      {
+        minReplicas: 2,
+        maxReplicas: 15,
+        cpuUtilization: 65,
+        memUtilization: 75,
+      }
 
   payment:
     enabled: true
@@ -94,8 +124,14 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "200m", memory: "384Mi" }
-      limits:   { cpu: "800m", memory: "768Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 12, cpuUtilization: 65, memUtilization: 75 }
+      limits: { cpu: "800m", memory: "768Mi" }
+    hpa:
+      {
+        minReplicas: 2,
+        maxReplicas: 12,
+        cpuUtilization: 65,
+        memUtilization: 75,
+      }
 
   wallet:
     enabled: true
@@ -104,8 +140,14 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "500m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "500m", memory: "512Mi" }
+    hpa:
+      {
+        minReplicas: 2,
+        maxReplicas: 10,
+        cpuUtilization: 70,
+        memUtilization: 80,
+      }
 
   ledger:
     enabled: true
@@ -114,8 +156,14 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "500m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "500m", memory: "512Mi" }
+    hpa:
+      {
+        minReplicas: 2,
+        maxReplicas: 10,
+        cpuUtilization: 70,
+        memUtilization: 80,
+      }
 
   beneficiary:
     enabled: true
@@ -124,8 +172,9 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "400m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "400m", memory: "512Mi" }
+    hpa:
+      { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
 
   kycRisk:
     enabled: true
@@ -134,8 +183,14 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "200m", memory: "512Mi" }
-      limits:   { cpu: "1000m", memory: "1Gi" }
-    hpa: { minReplicas: 2, maxReplicas: 12, cpuUtilization: 60, memUtilization: 75 }
+      limits: { cpu: "1000m", memory: "1Gi" }
+    hpa:
+      {
+        minReplicas: 2,
+        maxReplicas: 12,
+        cpuUtilization: 60,
+        memUtilization: 75,
+      }
 
   notification:
     enabled: true
@@ -144,8 +199,9 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "400m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "400m", memory: "512Mi" }
+    hpa:
+      { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
 
   reporting:
     enabled: true
@@ -154,8 +210,9 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "200m", memory: "512Mi" }
-      limits:   { cpu: "1000m", memory: "1Gi" }
-    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 70 }
+      limits: { cpu: "1000m", memory: "1Gi" }
+    hpa:
+      { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 70 }
 
   # â”€â”€ New Services (v2) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   authz:
@@ -165,8 +222,14 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "500m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "500m", memory: "512Mi" }
+    hpa:
+      {
+        minReplicas: 2,
+        maxReplicas: 10,
+        cpuUtilization: 70,
+        memUtilization: 80,
+      }
 
   card:
     enabled: true
@@ -175,8 +238,14 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "500m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "500m", memory: "512Mi" }
+    hpa:
+      {
+        minReplicas: 2,
+        maxReplicas: 10,
+        cpuUtilization: 70,
+        memUtilization: 80,
+      }
 
   loan:
     enabled: true
@@ -185,8 +254,14 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "200m", memory: "384Mi" }
-      limits:   { cpu: "800m", memory: "768Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 65, memUtilization: 75 }
+      limits: { cpu: "800m", memory: "768Mi" }
+    hpa:
+      {
+        minReplicas: 2,
+        maxReplicas: 10,
+        cpuUtilization: 65,
+        memUtilization: 75,
+      }
 
   emi:
     enabled: true
@@ -195,8 +270,9 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "400m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "400m", memory: "512Mi" }
+    hpa:
+      { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
 
   fixedDeposit:
     enabled: true
@@ -205,8 +281,9 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "400m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "400m", memory: "512Mi" }
+    hpa:
+      { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
 
   recurringDeposit:
     enabled: true
@@ -215,8 +292,9 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "400m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "400m", memory: "512Mi" }
+    hpa:
+      { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
 
   fraud:
     enabled: true
@@ -225,8 +303,14 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "300m", memory: "512Mi" }
-      limits:   { cpu: "1000m", memory: "1Gi" }
-    hpa: { minReplicas: 2, maxReplicas: 15, cpuUtilization: 60, memUtilization: 70 }
+      limits: { cpu: "1000m", memory: "1Gi" }
+    hpa:
+      {
+        minReplicas: 2,
+        maxReplicas: 15,
+        cpuUtilization: 60,
+        memUtilization: 70,
+      }
 
   compliance:
     enabled: true
@@ -235,8 +319,9 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "200m", memory: "384Mi" }
-      limits:   { cpu: "800m", memory: "768Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 65, memUtilization: 75 }
+      limits: { cpu: "800m", memory: "768Mi" }
+    hpa:
+      { minReplicas: 2, maxReplicas: 8, cpuUtilization: 65, memUtilization: 75 }
 
   audit:
     enabled: true
@@ -245,8 +330,9 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "500m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "500m", memory: "512Mi" }
+    hpa:
+      { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
 
   limit:
     enabled: true
@@ -255,8 +341,14 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "500m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "500m", memory: "512Mi" }
+    hpa:
+      {
+        minReplicas: 2,
+        maxReplicas: 10,
+        cpuUtilization: 70,
+        memUtilization: 80,
+      }
 
   interest:
     enabled: true
@@ -265,8 +357,9 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "500m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "500m", memory: "512Mi" }
+    hpa:
+      { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
 
   statement:
     enabled: true
@@ -275,8 +368,9 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "200m", memory: "384Mi" }
-      limits:   { cpu: "800m", memory: "768Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 65, memUtilization: 75 }
+      limits: { cpu: "800m", memory: "768Mi" }
+    hpa:
+      { minReplicas: 2, maxReplicas: 8, cpuUtilization: 65, memUtilization: 75 }
 
   support:
     enabled: true
@@ -285,8 +379,9 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "400m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "400m", memory: "512Mi" }
+    hpa:
+      { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
 
   analytics:
     enabled: true
@@ -295,8 +390,14 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "300m", memory: "512Mi" }
-      limits:   { cpu: "1000m", memory: "1Gi" }
-    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 65, memUtilization: 70 }
+      limits: { cpu: "1000m", memory: "1Gi" }
+    hpa:
+      {
+        minReplicas: 2,
+        maxReplicas: 10,
+        cpuUtilization: 65,
+        memUtilization: 70,
+      }
 
   fee:
     enabled: true
@@ -305,8 +406,9 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "400m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "400m", memory: "512Mi" }
+    hpa:
+      { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
 
   exchange:
     enabled: true
@@ -315,8 +417,9 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "400m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "400m", memory: "512Mi" }
+    hpa:
+      { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
 
   document:
     enabled: true
@@ -325,8 +428,9 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "400m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "400m", memory: "512Mi" }
+    hpa:
+      { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
 
   scheduler:
     enabled: true
@@ -335,8 +439,9 @@ services:
     replicas: 1
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "500m", memory: "512Mi" }
-    hpa: { minReplicas: 1, maxReplicas: 2, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "500m", memory: "512Mi" }
+    hpa:
+      { minReplicas: 1, maxReplicas: 2, cpuUtilization: 70, memUtilization: 80 }
 
   admin:
     enabled: true
@@ -345,8 +450,9 @@ services:
     replicas: 2
     resources:
       requests: { cpu: "100m", memory: "256Mi" }
-      limits:   { cpu: "400m", memory: "512Mi" }
-    hpa: { minReplicas: 2, maxReplicas: 4, cpuUtilization: 70, memUtilization: 80 }
+      limits: { cpu: "400m", memory: "512Mi" }
+    hpa:
+      { minReplicas: 2, maxReplicas: 4, cpuUtilization: 70, memUtilization: 80 }
 
 # â”€â”€ Frontend â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 frontend:
@@ -354,11 +460,10 @@ frontend:
   port: 80
   replicas: 2
   resources:
-    requests: { cpu: "50m",  memory: "128Mi" }
-    limits:   { cpu: "200m", memory: "256Mi" }
+    requests: { cpu: "50m", memory: "128Mi" }
+    limits: { cpu: "200m", memory: "256Mi" }
 
 # â”€â”€ StatefulSets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 
 postgres:
   enabled: true
@@ -371,7 +476,7 @@ postgres:
   user: banking
   resources:
     requests: { cpu: "300m", memory: "512Mi" }
-    limits:   { cpu: "1500m", memory: "3Gi" }
+    limits: { cpu: "1500m", memory: "3Gi" }
 
 redis:
   enabled: true
@@ -382,8 +487,7 @@ redis:
   storageClass: gp3
   resources:
     requests: { cpu: "100m", memory: "128Mi" }
-    limits:   { cpu: "500m", memory: "512Mi" }
-
+    limits: { cpu: "500m", memory: "512Mi" }
 
 kafka:
   enabled: true
@@ -394,7 +498,7 @@ kafka:
   storageClass: gp3
   resources:
     requests: { cpu: "300m", memory: "512Mi" }
-    limits:   { cpu: "1000m", memory: "2Gi" }
+    limits: { cpu: "1000m", memory: "2Gi" }
 
 # â”€â”€ Ingress (Traefik IngressRoute) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 ingress:

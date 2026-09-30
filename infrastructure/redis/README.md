@@ -9,6 +9,7 @@
   - Short-lived OTP data
 
 ### Connection String (Local)
+
 ```env
 REDIS_URL=redis://localhost:6379
 ```
