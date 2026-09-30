@@ -1,0 +1,358 @@
+{{/*
+  deployments.yaml — Banking Platform Helm Chart
+  Generates a Deployment + ClusterIP Service for every entry under .Values.services.
+  Includes: liveness/readiness probes, resource limits, HPA annotations,
+            Istio sidecar injection, Prometheus scrape, secret-ref from ESO,
+            configMap env vars, topology spread constraints for HA.
+*/}}
+
+{{- range $svcKey, $svc := .Values.services }}
+{{- if $svc.enabled }}
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Deployment: {{ $svc.name }}
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $svc.name }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "banking.labels" $ | nindent 4 }}
+    app.kubernetes.io/name:      {{ $svc.name }}
+    app.kubernetes.io/component: microservice
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+spec:
+  replicas: {{ $svc.replicas | default 2 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $svc.name }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge:       1
+      maxUnavailable: 0    # zero-downtime: never take a pod down before the new one is ready
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name:      {{ $svc.name }}
+        app.kubernetes.io/part-of:   banking-platform
+        app.kubernetes.io/component: microservice
+        version:                     {{ $.Values.global.imageTag | default "latest" | quote }}
+      annotations:
+        # ── Prometheus scraping ───────────────────────────────────────────────
+        prometheus.io/scrape: "true"
+        prometheus.io/port:   "{{ $svc.port }}"
+        prometheus.io/path:   "/metrics"
+        # ── Istio service mesh ────────────────────────────────────────────────
+        sidecar.istio.io/inject:                         "true"
+        sidecar.istio.io/proxyCPU:                       "50m"
+        sidecar.istio.io/proxyMemory:                    "128Mi"
+        # ── Force pod restart when ConfigMap changes ──────────────────────────
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") $ | sha256sum }}
+    spec:
+      serviceAccountName: {{ $svc.name }}-sa
+      automountServiceAccountToken: false
+
+      # ── Security context (drop all Linux capabilities) ─────────────────────
+      securityContext:
+        runAsNonRoot:   true
+        runAsUser:      1001
+        runAsGroup:     1001
+        fsGroup:        1001
+        seccompProfile:
+          type: RuntimeDefault
+
+      # ── Anti-affinity: spread pods across AZs and nodes ──────────────────
+      topologySpreadConstraints:
+        - maxSkew:            1
+          topologyKey:        topology.kubernetes.io/zone
+          whenUnsatisfiable:  DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ $svc.name }}
+        - maxSkew:            1
+          topologyKey:        kubernetes.io/hostname
+          whenUnsatisfiable:  DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ $svc.name }}
+
+      # ── Node affinity: schedule on application node group ─────────────────
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key:      role
+                    operator: In
+                    values:   [application]
+
+      # ── Tolerate application node group taint ─────────────────────────────
+      tolerations:
+        - key:      workload
+          operator: Equal
+          value:    application
+          effect:   NoSchedule
+
+      terminationGracePeriodSeconds: 30
+
+      containers:
+        - name: {{ $svc.name }}
+          image: "{{ $.Values.global.registry }}/banking/{{ $svc.name }}:{{ $.Values.global.imageTag | default "latest" }}"
+          imagePullPolicy: {{ $.Values.global.pullPolicy | default "IfNotPresent" }}
+
+          ports:
+            - name:          http
+              containerPort: {{ $svc.port }}
+              protocol:      TCP
+            - name:          grpc
+              containerPort: {{ add $svc.port 1000 }}  # gRPC port = HTTP port + 1000
+              protocol:      TCP
+
+          # ── Env: shared platform config ────────────────────────────────────
+          env:
+            - name:  NODE_ENV
+              value: "production"
+            - name:  PORT
+              value: {{ $svc.port | quote }}
+            - name:  SERVICE_NAME
+              value: {{ $svc.name | quote }}
+            - name:  LOG_LEVEL
+              value: "info"
+
+            # OpenTelemetry
+            - name:  OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ $.Values.global.otel.endpoint | quote }}
+            - name:  OTEL_SERVICE_NAME
+              value: {{ $svc.name | quote }}
+
+            # Database (from shared ConfigMap)
+            - name:  DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: banking-config
+                  key:  POSTGRES_HOST
+            - name:  DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: banking-config
+                  key:  POSTGRES_PORT
+            - name:  DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: banking-config
+                  key:  POSTGRES_DB
+
+            # DB password from External Secrets Operator-synced secret
+            - name:  DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: banking-db-secret
+                  key:  password
+
+            # Redis
+            - name:  REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: banking-config
+                  key:  REDIS_HOST
+            - name:  REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: banking-config
+                  key:  REDIS_PORT
+            - name:  REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: banking-redis-secret
+                  key:  password
+                  optional: true
+
+            # Kafka
+            - name:  KAFKA_BROKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: banking-config
+                  key:  KAFKA_BROKERS
+
+            # JWT (service-specific from ESO)
+            - name:  JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $svc.name }}-secrets
+                  key:  JWT_SECRET
+                  optional: true   # non-auth services won't have this key
+
+          # ── Resource constraints ────────────────────────────────────────────
+          resources:
+            {{- toYaml $svc.resources | nindent 12 }}
+
+          # ── Readiness probe (load balancer traffic only when truly ready) ──
+          readinessProbe:
+            httpGet:
+              path:   /health/ready
+              port:   http
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds:       10
+            timeoutSeconds:      5
+            successThreshold:    1
+            failureThreshold:    3
+
+          # ── Liveness probe (restart if deadlocked) ─────────────────────────
+          livenessProbe:
+            httpGet:
+              path:   /health/live
+              port:   http
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds:       20
+            timeoutSeconds:      5
+            failureThreshold:    3
+
+          # ── Startup probe (allow slow cold-starts on first deploy) ─────────
+          startupProbe:
+            httpGet:
+              path:   /health
+              port:   http
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds:       5
+            failureThreshold:    12    # 12 × 5s = 60s max startup window
+
+          # ── Security context (container-level) ────────────────────────────
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem:   true
+            capabilities:
+              drop: [ALL]
+
+          # ── Tmp volume for Node.js (readOnly root FS) ─────────────────────
+          volumeMounts:
+            - name:      tmp
+              mountPath: /tmp
+            - name:      var-run
+              mountPath: /var/run
+
+      volumes:
+        - name:     tmp
+          emptyDir: {}
+        - name:     var-run
+          emptyDir: {}
+
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ClusterIP Service: {{ $svc.name }}
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $svc.name }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "banking.labels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $svc.name }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port:   "{{ $svc.port }}"
+    prometheus.io/path:   "/metrics"
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ $svc.name }}
+  ports:
+    - name:       http
+      port:       {{ $svc.port }}
+      targetPort: http
+      protocol:   TCP
+    - name:       grpc
+      port:       {{ add $svc.port 1000 }}
+      targetPort: grpc
+      protocol:   TCP
+
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ServiceAccount: {{ $svc.name }}-sa (IRSA annotation for AWS Secrets Manager)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $svc.name }}-sa
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "banking.labels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $svc.name }}
+  annotations:
+    # IRSA: attach the app-secrets IAM role so ESO can pull Secrets Manager values
+    eks.amazonaws.com/role-arn: {{ $.Values.global.appSecretsRoleArn | default "" | quote }}
+automountServiceAccountToken: false
+
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# HorizontalPodAutoscaler: {{ $svc.name }}
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $svc.name }}-hpa
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "banking.labels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $svc.name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind:       Deployment
+    name:       {{ $svc.name }}
+  minReplicas: {{ $svc.hpa.minReplicas | default 2 }}
+  maxReplicas: {{ $svc.hpa.maxReplicas | default 10 }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type:               Utilization
+          averageUtilization: {{ $svc.hpa.cpuUtilization | default 70 }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type:               Utilization
+          averageUtilization: {{ $svc.hpa.memUtilization | default 80 }}
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+        - type:          Pods
+          value:         2
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300   # 5 min cool-down before scaling in
+      policies:
+        - type:          Pods
+          value:         1
+          periodSeconds: 120
+
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# PodDisruptionBudget: {{ $svc.name }} — guarantee ≥1 pod during node upgrades
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $svc.name }}-pdb
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "banking.labels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $svc.name }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $svc.name }}
+
+{{- end }}
+{{- end }}

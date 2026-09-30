@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: banking-production
+  namespace: argocd
+spec:
+  project: banking
+  source:
+    repoURL: https://github.com/kmdsuhail72/banking.git
+    targetRevision: main
+    path: gitops/environments/production
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: banking-production
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m

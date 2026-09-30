@@ -1,17 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
-import { ConflictException, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import {
+  ConflictException,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { AuthService } from '../auth.service';
 import { User } from '../schemas/user.schema';
 import { TokenService } from '../services/token.service';
-import { RedisSessionService } from '../services/redis-session.service';
+import { RedisService } from '../../redis/redis.service';
 import { UserRole, UserStatus } from '@banking/shared-types';
 
 describe('AuthService Unit Tests', () => {
   let authService: AuthService;
   let tokenService: TokenService;
-  let redisSessionService: RedisSessionService;
+  let redisService: RedisService;
 
   const mockUser = {
     _id: '66abc123456789abcdef0001',
@@ -29,6 +34,14 @@ describe('AuthService Unit Tests', () => {
     create: jest.fn(),
   };
 
+  const mockRedisService = {
+    setSession: jest.fn().mockResolvedValue(undefined),
+    getSession: jest.fn().mockResolvedValue(null),
+    deleteSession: jest.fn().mockResolvedValue(undefined),
+    blacklistToken: jest.fn().mockResolvedValue(undefined),
+    isTokenBlacklisted: jest.fn().mockResolvedValue(false),
+  };
+
   beforeAll(async () => {
     mockUser.passwordHash = await argon2.hash('Password@123', {
       type: argon2.argon2id,
@@ -39,20 +52,29 @@ describe('AuthService Unit Tests', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [
+        JwtModule.register({
+          secret: 'test-access-secret',
+          signOptions: { expiresIn: '15m' },
+        }),
+      ],
       providers: [
         AuthService,
         TokenService,
-        RedisSessionService,
         {
           provide: getModelToken(User.name),
           useValue: mockUserModel,
+        },
+        {
+          provide: RedisService,
+          useValue: mockRedisService,
         },
       ],
     }).compile();
 
     authService = module.get<AuthService>(AuthService);
     tokenService = module.get<TokenService>(TokenService);
-    redisSessionService = module.get<RedisSessionService>(RedisSessionService);
+    redisService = module.get<RedisService>(RedisService);
   });
 
   afterEach(() => {
@@ -60,7 +82,7 @@ describe('AuthService Unit Tests', () => {
   });
 
   describe('Registration', () => {
-    it('should register a new user with Argon2 password hash', async () => {
+    it('should register a new user with Argon2 password hash and PENDING status', async () => {
       mockUserModel.findOne.mockResolvedValue(null);
       mockUserModel.create.mockResolvedValue({
         _id: '66abc123456789abcdef0001',
@@ -77,10 +99,11 @@ describe('AuthService Unit Tests', () => {
         password: 'Password@123',
       });
 
-      expect(result.userId).toBe('66abc123456789abcdef0001');
-      expect(result.email).toBe('john@novabank.com');
-      expect(result.status).toBe(UserStatus.PENDING);
+      expect(result.user.id).toBe('66abc123456789abcdef0001');
+      expect(result.user.email).toBe('john@novabank.com');
+      expect(result.user.status).toBe(UserStatus.PENDING);
       expect(mockUserModel.create).toHaveBeenCalled();
+      expect(mockRedisService.setSession).toHaveBeenCalled();
     });
 
     it('should throw ConflictException on duplicate email', async () => {
@@ -115,7 +138,10 @@ describe('AuthService Unit Tests', () => {
     });
 
     it('should throw UnauthorizedException with generic message for wrong password', async () => {
-      mockUserModel.findOne.mockResolvedValue(mockUser);
+      mockUserModel.findOne.mockResolvedValue({
+        ...mockUser,
+        save: jest.fn().mockResolvedValue(true),
+      });
 
       await expect(
         authService.login({
@@ -134,6 +160,46 @@ describe('AuthService Unit Tests', () => {
           password: 'Password@123',
         }),
       ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw UnauthorizedException for suspended account', async () => {
+      mockUserModel.findOne.mockResolvedValue({
+        ...mockUser,
+        status: UserStatus.SUSPENDED,
+        save: jest.fn().mockResolvedValue(true),
+      });
+
+      await expect(
+        authService.login({
+          email: 'test@novabank.com',
+          password: 'Password@123',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('Forgot Password', () => {
+    it('should return generic message when email not found (prevent enumeration)', async () => {
+      mockUserModel.findOne.mockResolvedValue(null);
+      const result = await authService.forgotPassword('notfound@novabank.com');
+      expect(result.message).toContain('If this email is registered');
+    });
+
+    it('should set password reset token on valid email', async () => {
+      const saveMock = jest.fn().mockResolvedValue(true);
+      mockUserModel.findOne.mockResolvedValue({ ...mockUser, save: saveMock });
+
+      const result = await authService.forgotPassword('test@novabank.com');
+      expect(result.message).toContain('If this email is registered');
+      expect(saveMock).toHaveBeenCalled();
+    });
+  });
+
+  describe('Logout', () => {
+    it('should delete session and blacklist access token on logout', async () => {
+      await authService.logout('user123', 'some-access-token');
+      expect(mockRedisService.deleteSession).toHaveBeenCalledWith('user123');
+      expect(mockRedisService.blacklistToken).toHaveBeenCalledWith('some-access-token', 900);
     });
   });
 });

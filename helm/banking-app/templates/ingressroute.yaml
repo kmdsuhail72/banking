@@ -1,0 +1,235 @@
+{{- if .Values.ingress.enabled }}
+---
+# ── Traefik IngressRoute — path-based routing for all services ─────────────────
+# Requires Traefik to be installed in the cluster:
+#   helm install traefik traefik/traefik -n traefik --create-namespace
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: banking-ingress
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "banking.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    - {{ .Values.ingress.entryPoint }}
+  routes:
+    # ── API Gateway (catch-all for /api/* if needed) ─────────────────────────
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/auth`)
+      kind: Rule
+      services:
+        - name: auth-service
+          port: {{ .Values.services.auth.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/customers`)
+      kind: Rule
+      services:
+        - name: customer-service
+          port: {{ .Values.services.customer.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/accounts`)
+      kind: Rule
+      services:
+        - name: account-service
+          port: {{ .Values.services.account.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/transactions`)
+      kind: Rule
+      services:
+        - name: transaction-service
+          port: {{ .Values.services.transaction.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/payments`)
+      kind: Rule
+      services:
+        - name: payment-service
+          port: {{ .Values.services.payment.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/wallets`)
+      kind: Rule
+      services:
+        - name: wallet-service
+          port: {{ .Values.services.wallet.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/ledger`)
+      kind: Rule
+      services:
+        - name: ledger-service
+          port: {{ .Values.services.ledger.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/beneficiaries`)
+      kind: Rule
+      services:
+        - name: beneficiary-service
+          port: {{ .Values.services.beneficiary.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/kyc`)
+      kind: Rule
+      services:
+        - name: kyc-risk-service
+          port: {{ .Values.services.kycRisk.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/notifications`)
+      kind: Rule
+      services:
+        - name: notification-service
+          port: {{ .Values.services.notification.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/reports`)
+      kind: Rule
+      services:
+        - name: reporting-service
+          port: {{ .Values.services.reporting.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/authz`)
+      kind: Rule
+      services:
+        - name: authz-service
+          port: {{ .Values.services.authz.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/cards`)
+      kind: Rule
+      services:
+        - name: card-service
+          port: {{ .Values.services.card.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/loans`)
+      kind: Rule
+      services:
+        - name: loan-service
+          port: {{ .Values.services.loan.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/emi`)
+      kind: Rule
+      services:
+        - name: emi-service
+          port: {{ .Values.services.emi.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/fixed-deposits`)
+      kind: Rule
+      services:
+        - name: fixed-deposit-service
+          port: {{ .Values.services.fixedDeposit.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/recurring-deposits`)
+      kind: Rule
+      services:
+        - name: recurring-deposit-service
+          port: {{ .Values.services.recurringDeposit.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/fraud`)
+      kind: Rule
+      services:
+        - name: fraud-service
+          port: {{ .Values.services.fraud.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/compliance`)
+      kind: Rule
+      services:
+        - name: compliance-service
+          port: {{ .Values.services.compliance.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/audit`)
+      kind: Rule
+      services:
+        - name: audit-service
+          port: {{ .Values.services.audit.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/limits`)
+      kind: Rule
+      services:
+        - name: limit-service
+          port: {{ .Values.services.limit.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/interest`)
+      kind: Rule
+      services:
+        - name: interest-service
+          port: {{ .Values.services.interest.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/statements`)
+      kind: Rule
+      services:
+        - name: statement-service
+          port: {{ .Values.services.statement.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/support`)
+      kind: Rule
+      services:
+        - name: support-service
+          port: {{ .Values.services.support.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/analytics`)
+      kind: Rule
+      services:
+        - name: analytics-service
+          port: {{ .Values.services.analytics.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/fees`)
+      kind: Rule
+      services:
+        - name: fee-service
+          port: {{ .Values.services.fee.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/exchange`)
+      kind: Rule
+      services:
+        - name: exchange-service
+          port: {{ .Values.services.exchange.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/documents`)
+      kind: Rule
+      services:
+        - name: document-service
+          port: {{ .Values.services.document.port }}
+
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`/api/v1/admin`)
+      kind: Rule
+      services:
+        - name: admin-service
+          port: {{ .Values.services.admin.port }}
+
+    # ── Frontend — catch-all (must be last) ───────────────────────────────────
+    - match: Host(`{{ .Values.ingress.host }}`)
+      kind: Rule
+      services:
+        - name: frontend
+          port: {{ .Values.frontend.port }}
+
+  {{- if .Values.ingress.tls }}
+  tls:
+    certResolver: {{ .Values.ingress.certResolver }}
+    domains:
+      - main: {{ .Values.ingress.host }}
+  {{- end }}
+---
+# ── HTTP → HTTPS redirect ─────────────────────────────────────────────────────
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: banking-ingress-http
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "banking.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`{{ .Values.ingress.host }}`)
+      kind: Rule
+      middlewares:
+        - name: redirect-to-https
+      services:
+        - name: frontend
+          port: {{ .Values.frontend.port }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-to-https
+  namespace: {{ .Values.global.namespace }}
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+{{- end }}

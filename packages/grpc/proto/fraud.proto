@@ -1,0 +1,32 @@
+syntax = "proto3";
+package banking.fraud;
+option optimize_for = SPEED;
+
+service FraudService {
+  rpc ScoreTransaction  (ScoreTransactionRequest)  returns (ScoreTransactionResponse);
+  rpc ReportFraud       (ReportFraudRequest)       returns (ReportFraudResponse);
+  rpc GetFraudCase      (GetFraudCaseRequest)      returns (GetFraudCaseResponse);
+}
+
+message ScoreTransactionRequest {
+  string user_id       = 1;
+  string account_id    = 2;
+  int64  amount_minor  = 3;
+  string currency      = 4;
+  string payment_method = 5;
+  string destination_account_id = 6;
+  string ip_address    = 7;
+  string device_id     = 8;
+}
+message ScoreTransactionResponse {
+  double risk_score    = 1;  // 0.0 – 1.0
+  string risk_level    = 2;  // LOW | MEDIUM | HIGH | CRITICAL
+  bool   blocked       = 3;
+  repeated string triggered_rules = 4;
+}
+
+message ReportFraudRequest  { string transaction_id = 1; string user_id = 2; string reason = 3; }
+message ReportFraudResponse { string case_id = 1; bool success = 2; }
+
+message GetFraudCaseRequest  { string case_id = 1; }
+message GetFraudCaseResponse { string id = 1; string transaction_id = 2; string status = 3; string created_at = 4; }

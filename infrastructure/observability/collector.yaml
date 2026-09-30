@@ -1,0 +1,149 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  # Drop health-check and metrics-scrape spans — high volume, zero signal.
+  filter/health:
+    error_mode: ignore
+    traces:
+      span:
+        - 'attributes["http.target"] == "/health"'
+        - 'attributes["http.target"] == "/metrics"'
+        - 'attributes["http.url"] matches "/(health|metrics)$"'
+
+  attributes/privacy:
+    actions:
+      - key: http.url
+        action: delete
+      - key: http.target
+        action: delete
+      - key: url.full
+        action: delete
+      - key: url.query
+        action: delete
+      - key: http.request.header.authorization
+        action: delete
+      - key: http.request.header.cookie
+        action: delete
+      - key: http.request.header.x-auth-token
+        action: delete
+
+  batch:
+    timeout: 1s
+    send_batch_size: 512
+    send_batch_max_size: 1024
+
+  resource:
+    attributes:
+      - key: service.name
+        action: upsert
+        from_attribute: service.name
+      # Inject k8s metadata when present (set via OTEL_RESOURCE_ATTRIBUTES env var)
+      - key: k8s.namespace.name
+        action: upsert
+        from_attribute: k8s.namespace.name
+      - key: k8s.pod.name
+        action: upsert
+        from_attribute: k8s.pod.name
+      - key: k8s.node.name
+        action: upsert
+        from_attribute: k8s.node.name
+
+connectors:
+  # ── spanmetrics ────────────────────────────────────────────────────────────
+  # Generates RED metrics (calls_total, duration histogram) from every span.
+  # These power the "Traces → Metrics" drill-down in Grafana Tempo datasource.
+  spanmetrics:
+    namespace: traces
+    histogram:
+      explicit:
+        buckets: [5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2s, 5s]
+    dimensions:
+      - name: service.name
+      - name: http.method
+      - name: http.status_code
+      - name: rpc.method
+      - name: db.system
+    exemplars:
+      enabled: true
+    metrics_flush_interval: 15s
+
+  # ── servicegraph ───────────────────────────────────────────────────────────
+  # Derives service-to-service call rates and latencies from traces.
+  # Powers the Grafana "Service Graph" panel in the Tempo datasource.
+  servicegraph:
+    metrics_flush_interval: 15s
+    dimensions:
+      - http.method
+      - http.status_code
+    store:
+      ttl: 2s
+      max_items: 10000
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  # Expose spanmetrics + servicegraph metrics for Prometheus to scrape
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+      enabled: true
+    enable_open_metrics: true
+
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    default_labels_enabled:
+      exporter: false
+      job: true
+    labels:
+      attributes:
+        service.name: service
+        level: level
+        traceId: traceId
+        spanId: spanId
+
+  # Debug exporter — remove or set verbosity: basic in production
+  # debug:
+  #   verbosity: basic
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  pprof:
+    endpoint: 0.0.0.0:1777
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions: [health_check, pprof, zpages]
+  pipelines:
+    # ── Traces ─────────────────────────────────────────────────────────────────
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, filter/health, attributes/privacy, batch]
+      exporters: [otlp/tempo, spanmetrics, servicegraph]
+
+    # ── Metrics (from OTLP push + spanmetrics/servicegraph connectors) ─────────
+    metrics:
+      receivers: [otlp, spanmetrics, servicegraph]
+      processors: [memory_limiter, resource, batch]
+      exporters: [prometheus]
+
+    # ── Logs ───────────────────────────────────────────────────────────────────
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [loki]

@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: banking-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "banking.labels" . | nindent 4 }}
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  DB_HOST: {{ .Values.global.postgres.host | quote }}
+  DB_PORT: {{ .Values.global.postgres.port | quote }}
+  DB_NAME: {{ .Values.global.postgres.database | quote }}
+  DB_USER: {{ .Values.global.postgres.user | quote }}
+  DB_POOL_SIZE: "10"
+  DB_SSL: "true"
+  # ── Kafka ──────────────────────────────────────────────────────────────────
+  KAFKA_BROKERS: {{ .Values.global.kafka.brokers | quote }}
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  REDIS_HOST: {{ .Values.global.redis.host | quote }}
+  REDIS_PORT: {{ .Values.global.redis.port | quote }}
+  # ── OTel ───────────────────────────────────────────────────────────────────
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.global.otel.endpoint | quote }}
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"

@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banking-backend
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: banking-backend
+  template:
+    metadata:
+      labels:
+        app: banking-backend
+    spec:
+      containers:
+        - name: banking-backend
+          image: ghcr.io/kmdsuhail72/banking-backend:unconfigured
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5000
+          env:
+            - name: PORT
+              value: "5000"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: banking-backend-secrets
+                  key: MONGO_URI
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: banking-backend-secrets
+                  key: JWT_SECRET
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  type: ClusterIP
+  selector:
+    app: banking-backend
+  ports:
+    - name: http
+      port: 5000
+      targetPort: http

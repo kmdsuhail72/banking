@@ -1,13 +1,15 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { DatabaseModule } from '@banking/database';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { appConfig } from '@banking/config';
+import { UserEntity } from './entities/user.entity';
+import { AuthOutboxEntity } from './entities/auth-outbox.entity';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(appConfig.mongodb.uri, {
-      serverSelectionTimeoutMS: 5000,
+    DatabaseModule.forService({
+      entities: [UserEntity, AuthOutboxEntity],
+      // Outbox relay wired in AuthModule where KafkaBus is available
     }),
     HealthModule,
     AuthModule,

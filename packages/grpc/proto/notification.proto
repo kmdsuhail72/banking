@@ -1,0 +1,16 @@
+﻿syntax = "proto3";
+package banking.notification;
+option optimize_for = SPEED;
+
+service NotificationService {
+  rpc SendNotification   (SendNotificationRequest)  returns (SendNotificationResponse);
+  rpc MarkRead           (MarkReadRequest)          returns (MarkReadResponse);
+  rpc ListNotifications  (ListNotificationsRequest) returns (ListNotificationsResponse);
+}
+message SendNotificationRequest  { string user_id = 1; string type = 2; string title = 3; string body = 4; string channel = 5; }
+message SendNotificationResponse { string notification_id = 1; bool success = 2; }
+message MarkReadRequest  { string notification_id = 1; }
+message MarkReadResponse { bool success = 1; }
+message NotificationRecord { string id = 1; string type = 2; string title = 3; string body = 4; bool read = 5; string created_at = 6; }
+message ListNotificationsRequest  { string user_id = 1; int32 limit = 2; bool unread_only = 3; }
+message ListNotificationsResponse { repeated NotificationRecord notifications = 1; int32 unread_count = 2; }

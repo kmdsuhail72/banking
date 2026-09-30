@@ -1,0 +1,232 @@
+﻿# =============================================================================
+# Istio Service Mesh — Banking Platform
+# Configures: mTLS PeerAuthentication, AuthorizationPolicy, VirtualServices,
+#             DestinationRules, and Gateway for the banking namespace
+# =============================================================================
+
+# ── Istio Gateway (replaces/supplements NGINX for internal mesh traffic) ──────
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: banking-gateway
+  namespace: banking
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: banking-tls
+      hosts:
+        - banking.example.com
+        - api.banking.example.com
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - banking.example.com
+        - api.banking.example.com
+      tls:
+        httpsRedirect: true
+
+---
+# ── Strict mTLS for all services in banking namespace ─────────────────────────
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: banking-strict-mtls
+  namespace: banking
+spec:
+  mtls:
+    mode: STRICT
+
+---
+# ── AuthorizationPolicy — deny all by default, allow explicit paths ───────────
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: banking-default-deny
+  namespace: banking
+spec:
+  {}  # Empty spec = deny all by default
+
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-api-gateway
+  namespace: banking
+spec:
+  selector:
+    matchLabels:
+      app: api-gateway
+  rules:
+    - from:
+        - source:
+            namespaces: ["istio-system", "banking"]
+      to:
+        - operation:
+            methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-internal-services
+  namespace: banking
+spec:
+  rules:
+    - from:
+        - source:
+            namespaces: ["banking"]
+      to:
+        - operation:
+            methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
+
+---
+# ── DestinationRules — circuit breaking + connection pools ───────────────────
+# Payment Service — critical, aggressive circuit breaking
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: payment-service-dr
+  namespace: banking
+spec:
+  host: payment-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        http2MaxRequests: 200
+        maxRequestsPerConnection: 10
+        maxRetries: 3
+    outlierDetection:
+      consecutiveGatewayErrors: 5
+      consecutive5xxErrors: 5
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      minHealthPercent: 50
+
+---
+# Transaction Service — high throughput, longer timeouts
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: transaction-service-dr
+  namespace: banking
+spec:
+  host: transaction-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 200
+      http:
+        http1MaxPendingRequests: 100
+        http2MaxRequests: 500
+        maxRequestsPerConnection: 20
+        maxRetries: 3
+    outlierDetection:
+      consecutiveGatewayErrors: 5
+      consecutive5xxErrors: 5
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 30
+      minHealthPercent: 70
+
+---
+# Default DestinationRule for all other services
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: banking-default-dr
+  namespace: banking
+spec:
+  host: "*.banking.svc.cluster.local"
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 50
+      http:
+        http1MaxPendingRequests: 25
+        http2MaxRequests: 100
+        maxRetries: 3
+    outlierDetection:
+      consecutiveGatewayErrors: 5
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 25
+
+---
+# ── VirtualService — API Gateway routing with retries + timeouts ──────────────
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: api-gateway-vs
+  namespace: banking
+spec:
+  hosts:
+    - api.banking.example.com
+  gateways:
+    - banking-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /api/v1/payments
+      route:
+        - destination:
+            host: api-gateway
+            port:
+              number: 3000
+      timeout: 30s
+      retries:
+        attempts: 3
+        perTryTimeout: 10s
+        retryOn: gateway-error,connect-failure,retriable-4xx
+    - match:
+        - uri:
+            prefix: /api/v1/transactions
+      route:
+        - destination:
+            host: api-gateway
+            port:
+              number: 3000
+      timeout: 60s
+      retries:
+        attempts: 3
+        perTryTimeout: 20s
+        retryOn: gateway-error,connect-failure
+    - match:
+        - uri:
+            prefix: /api/v1
+      route:
+        - destination:
+            host: api-gateway
+            port:
+              number: 3000
+      timeout: 15s
+      retries:
+        attempts: 2
+        perTryTimeout: 7s
+        retryOn: gateway-error,connect-failure,retriable-4xx
+
+---
+# ── Telemetry — enable distributed tracing for all services ───────────────────
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: banking-tracing
+  namespace: banking
+spec:
+  tracing:
+    - providers:
+        - name: "jaeger"
+      randomSamplingPercentage: 10.0  # 10% sampling in production

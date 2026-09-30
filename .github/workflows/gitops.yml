@@ -1,0 +1,42 @@
+name: Validate GitOps manifests
+on:
+  pull_request:
+    paths:
+      [
+        "gitops/**",
+        "scripts/promote-gitops.py",
+        "scripts/test_promote_gitops.py",
+        ".github/workflows/gitops.yml",
+      ]
+  push:
+    branches: [main]
+    paths:
+      [
+        "gitops/**",
+        "scripts/promote-gitops.py",
+        "scripts/test_promote_gitops.py",
+        ".github/workflows/gitops.yml",
+      ]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test promotion validation and environment isolation
+        run: python scripts/test_promote_gitops.py
+      - uses: azure/setup-kubectl@v4
+        with:
+          version: v1.34.1
+      - name: Render both environments and Argo CD bootstrap
+        run: |
+          mkdir -p rendered
+          kubectl kustomize gitops/environments/staging > rendered/staging.yaml
+          kubectl kustomize gitops/environments/production > rendered/production.yaml
+          kubectl kustomize gitops/argocd > rendered/argocd.yaml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gitops-rendered-manifests
+          path: rendered/

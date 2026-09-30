@@ -1,0 +1,56 @@
+server:
+  http_listen_port: 9080
+  log_level: warn
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    tenant_id: banking
+    batchwait: 1s
+    batchsize: 102400
+
+scrape_configs:
+  - job_name: banking-containers
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 10s
+        filters:
+          - name: label
+            values: ["com.docker.compose.project=banking"]
+    relabel_configs:
+      # Use the compose service name as the job label
+      - source_labels: [__meta_docker_container_label_com_docker_compose_service]
+        target_label: service
+      - source_labels: [__meta_docker_container_name]
+        regex: '/?(.*)'
+        target_label: container
+      - source_labels: [__meta_docker_container_id]
+        target_label: container_id
+      # Drop observability containers' own logs to avoid circular ingestion
+      - source_labels: [service]
+        regex: 'loki|promtail|grafana|otel-collector|tempo|prometheus|alertmanager'
+        action: drop
+    pipeline_stages:
+      # Parse JSON logs from @banking/logger
+      - json:
+          expressions:
+            level: level
+            traceId: traceId
+            spanId: spanId
+            service_name: service
+            message: message
+      # Promote traceId and level to indexed labels for Tempo correlation
+      - labels:
+          level:
+          traceId:
+      # Drop noisy health-check logs
+      - drop:
+          expression: '.*GET /(health|metrics).*'
+      # Set the log timestamp from the JSON field
+      - timestamp:
+          source: timestamp
+          format: RFC3339Nano
+          fallback_formats:
+            - RFC3339

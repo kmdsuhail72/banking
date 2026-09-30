@@ -1,0 +1,201 @@
+﻿# =============================================================================
+# Prometheus Alerting Rules — Banking Platform
+# Covers: availability, latency, errors, database, security, fraud
+# =============================================================================
+groups:
+  # ── Service Availability ───────────────────────────────────────────────────
+  - name: service_availability
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up{job="banking"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.service }} is DOWN"
+          description: "The banking service {{ $labels.service }} has been unreachable for more than 1 minute."
+          runbook_url: "https://wiki.banking.example.com/runbooks/service-down"
+
+      - alert: HighPodRestartRate
+        expr: rate(kube_pod_container_status_restarts_total{namespace="banking"}[15m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod {{ $labels.pod }} is restarting frequently"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has restarted more than once in 15 minutes."
+
+      - alert: DeploymentReplicasMismatch
+        expr: kube_deployment_spec_replicas{namespace="banking"} != kube_deployment_status_available_replicas{namespace="banking"}
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Deployment {{ $labels.deployment }} replicas mismatch"
+          description: "Deployment {{ $labels.deployment }} has {{ $value }} available replicas, expected {{ $labels.spec_replicas }}."
+
+  # ── HTTP Error Rates ───────────────────────────────────────────────────────
+  - name: http_errors
+    interval: 30s
+    rules:
+      - alert: HighHttpErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5..", job="banking"}[5m])) by (service)
+          /
+          sum(rate(http_requests_total{job="banking"}[5m])) by (service)
+          > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High HTTP error rate on {{ $labels.service }}"
+          description: "Service {{ $labels.service }} has a 5xx error rate of {{ $value | humanizePercentage }} over the last 5 minutes."
+          runbook_url: "https://wiki.banking.example.com/runbooks/http-errors"
+
+      - alert: PaymentServiceErrorRate
+        expr: |
+          sum(rate(http_requests_total{service="payment-service", status=~"5.."}[5m]))
+          /
+          sum(rate(http_requests_total{service="payment-service"}[5m]))
+          > 0.01
+        for: 1m
+        labels:
+          severity: critical
+          team: payments
+        annotations:
+          summary: "Payment service error rate exceeded 1%"
+          description: "Payment service 5xx error rate is {{ $value | humanizePercentage }}. Immediate investigation required."
+          runbook_url: "https://wiki.banking.example.com/runbooks/payment-errors"
+
+  # ── Latency ───────────────────────────────────────────────────────────────
+  - name: latency
+    rules:
+      - alert: HighP99Latency
+        expr: |
+          histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job="banking"}[5m])) by (le, service))
+          > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High P99 latency on {{ $labels.service }}"
+          description: "Service {{ $labels.service }} P99 latency is {{ $value }}s (threshold: 2s)."
+
+      - alert: PaymentHighLatency
+        expr: |
+          histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service="payment-service"}[5m])) by (le))
+          > 1
+        for: 3m
+        labels:
+          severity: critical
+          team: payments
+        annotations:
+          summary: "Payment service P95 latency exceeded 1 second"
+          description: "Payment service P95 latency is {{ $value }}s. SLA breach risk."
+
+  # ── Database ───────────────────────────────────────────────────────────────
+  - name: database
+    rules:
+      - alert: PostgresConnectionPoolExhausted
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.85
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL connection pool is {{ $value | humanizePercentage }} full"
+          description: "PostgreSQL is using {{ $value | humanizePercentage }} of its max connections. Risk of connection exhaustion."
+
+      - alert: PostgresReplicationLag
+        expr: pg_replication_lag_seconds > 30
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL replication lag is {{ $value }}s"
+          description: "PostgreSQL standby replication is lagging by {{ $value }} seconds."
+
+      - alert: RedisMemoryUsageHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis memory usage is {{ $value | humanizePercentage }}"
+          description: "Redis is using {{ $value | humanizePercentage }} of its max memory. Risk of OOM eviction."
+
+  # ── Resource Usage ─────────────────────────────────────────────────────────
+  - name: resource_usage
+    rules:
+      - alert: PodCpuThrottling
+        expr: |
+          rate(container_cpu_cfs_throttled_seconds_total{namespace="banking"}[5m])
+          /
+          rate(container_cpu_cfs_periods_total{namespace="banking"}[5m])
+          > 0.25
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod {{ $labels.pod }} CPU throttling at {{ $value | humanizePercentage }}"
+          description: "Container {{ $labels.container }} in pod {{ $labels.pod }} is being CPU throttled {{ $value | humanizePercentage }} of the time."
+
+      - alert: PodMemoryUsageHigh
+        expr: |
+          container_memory_working_set_bytes{namespace="banking", container!=""}
+          /
+          container_spec_memory_limit_bytes{namespace="banking", container!=""}
+          > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod {{ $labels.pod }} memory at {{ $value | humanizePercentage }} of limit"
+          description: "Container {{ $labels.container }} is using {{ $value | humanizePercentage }} of its memory limit."
+
+  # ── Security / Fraud ──────────────────────────────────────────────────────
+  - name: security
+    rules:
+      - alert: AbnormalLoginFailures
+        expr: |
+          sum(increase(auth_login_failures_total[5m])) > 100
+        for: 1m
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: "Abnormal login failure spike: {{ $value }} failures in 5 minutes"
+          description: "More than 100 login failures detected in the last 5 minutes. Possible brute-force attack."
+          runbook_url: "https://wiki.banking.example.com/runbooks/brute-force"
+
+      - alert: FraudScoreThreshold
+        expr: |
+          sum(increase(fraud_alerts_total{score="high"}[5m])) > 10
+        for: 1m
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: "High-risk fraud alerts spiking: {{ $value }} alerts in 5m"
+          description: "Fraud detection service issued {{ $value }} high-risk alerts in the last 5 minutes."
+
+  # ── Kafka ─────────────────────────────────────────────────────────────────
+  - name: kafka
+    rules:
+      - alert: KafkaConsumerLagHigh
+        expr: kafka_consumergroup_lag > 10000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka consumer group {{ $labels.consumergroup }} lag is {{ $value }}"
+          description: "Consumer group {{ $labels.consumergroup }} on topic {{ $labels.topic }} has a lag of {{ $value }} messages."
+
+      - alert: KafkaConsumerLagCritical
+        expr: kafka_consumergroup_lag > 50000
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Kafka consumer group {{ $labels.consumergroup }} lag CRITICAL: {{ $value }}"
+          description: "Consumer group {{ $labels.consumergroup }} lag is {{ $value }}. Event processing is severely behind."

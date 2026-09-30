@@ -1,0 +1,15 @@
+﻿syntax = "proto3";
+package banking.recurring_deposit;
+option optimize_for = SPEED;
+
+service RecurringDepositService {
+  rpc CreateRD     (CreateRDRequest)   returns (CreateRDResponse);
+  rpc GetRD        (GetRDRequest)      returns (GetRDResponse);
+  rpc CollectRD    (CollectRDRequest)  returns (CollectRDResponse);
+}
+message CreateRDRequest  { string user_id = 1; string account_id = 2; int64 monthly_minor = 3; int32 tenure_months = 4; double interest_rate = 5; }
+message CreateRDResponse { string rd_id = 1; string status = 2; string maturity_date = 3; }
+message GetRDRequest  { string rd_id = 1; }
+message GetRDResponse { string id = 1; string user_id = 2; int64 monthly_minor = 3; double interest_rate = 4; string maturity_date = 5; string status = 6; int32 installments_paid = 7; }
+message CollectRDRequest  { string rd_id = 1; string transaction_id = 2; }
+message CollectRDResponse { bool success = 1; int32 installments_paid = 2; }

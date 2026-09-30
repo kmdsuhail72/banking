@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
+import { SessionLockOverlay } from '@/components/auth/Security';
 
 export const metadata: Metadata = {
   title: 'NovaBank | Enterprise Cloud Banking Platform',
@@ -16,9 +17,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="antialiased bg-slate-950 text-slate-100 min-h-screen">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>{children}<SessionLockOverlay /></AuthProvider>
       </body>
     </html>
   );
 }
-

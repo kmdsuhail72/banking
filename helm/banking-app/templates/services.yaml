@@ -1,0 +1,91 @@
+{{/*
+  Single template that generates Deployment + Service for all 12 microservices.
+  Iterates over .Values.services map — add or remove services in values.yaml only.
+*/}}
+{{- range $key, $svc := .Values.services }}
+{{- if $svc.enabled }}
+---
+# ── Deployment: {{ $svc.name }} ───────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $svc.name }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "banking.labels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $svc.name }}
+spec:
+  replicas: {{ $svc.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $svc.name }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ $svc.name }}
+        app.kubernetes.io/part-of: banking-platform
+      annotations:
+        {{- include "banking.promAnnotations" (dict "port" (toString $svc.port)) | nindent 8 }}
+    spec:
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+      {{- include "banking.antiAffinity" (dict "name" $svc.name) | nindent 6 }}
+      containers:
+        - name: {{ $svc.name }}
+          image: {{ include "banking.image" (dict "global" $.Values.global "name" $svc.name) }}
+          imagePullPolicy: {{ $.Values.global.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ $svc.port }}
+              protocol: TCP
+          env:
+            - name: PORT
+              value: {{ $svc.port | quote }}
+            - name: OTEL_SERVICE_NAME
+              value: {{ $svc.name | quote }}
+            {{- include "banking.otelEnv" $ | nindent 12 }}
+            {{- include "banking.dbEnv" $ | nindent 12 }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: jwt-secret
+          envFrom:
+            - configMapRef:
+                name: banking-config
+          {{- include "banking.probes" (dict "port" $svc.port) | nindent 10 }}
+          resources:
+            {{- toYaml $svc.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop: [ALL]
+---
+# ── Service: {{ $svc.name }} ──────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $svc.name }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "banking.labels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $svc.name }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ $svc.name }}
+  ports:
+    - name: http
+      port: {{ $svc.port }}
+      targetPort: http
+      protocol: TCP
+{{- end }}
+{{- end }}

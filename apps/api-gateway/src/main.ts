@@ -1,3 +1,5 @@
+﻿import { startTelemetry, installMetrics, installTelemetryShutdown } from '@banking/observability';
+startTelemetry('api-gateway');
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
@@ -8,6 +10,8 @@ import { createLogger } from '@banking/logger';
 async function bootstrap() {
   const logger = createLogger('API-Gateway');
   const app = await NestFactory.create(AppModule);
+  installMetrics(app, 'api-gateway');
+  installTelemetryShutdown(app);
 
   app.use(cookieParser());
   app.enableCors({
@@ -24,3 +28,4 @@ async function bootstrap() {
 }
 
 bootstrap();
+

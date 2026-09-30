@@ -1,6 +1,7 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import axios, { AxiosRequestConfig, Method } from 'axios';
 import { Request, Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
 import { appConfig } from '@banking/config';
 import { createLogger } from '@banking/logger';
 
@@ -31,12 +32,15 @@ export class ProxyService {
       );
     }
 
+    const requestId = uuidv4();
     const targetUrl = `${targetBase}${req.originalUrl}`;
-    this.logger.info(`Forwarding ${req.method} ${req.originalUrl} -> ${targetUrl}`);
+    this.logger.info(`[${requestId}] Forwarding ${req.method} ${req.originalUrl} -> ${targetUrl}`);
 
     const headers: Record<string, any> = { ...req.headers };
     delete headers.host;
     delete headers['content-length'];
+    // Inject correlation ID for distributed tracing
+    headers['x-request-id'] = requestId;
 
     const config: AxiosRequestConfig = {
       method: req.method as Method,
@@ -47,6 +51,7 @@ export class ProxyService {
       validateStatus: () => true, // Don't throw on error status codes, forward them
       timeout: 10000,
     };
+
 
     try {
       const response = await axios(config);

@@ -1,0 +1,29 @@
+syntax = "proto3";
+package banking.account;
+option optimize_for = SPEED;
+
+service AccountService {
+  rpc GetAccount       (GetAccountRequest)       returns (GetAccountResponse);
+  rpc GetBalance       (GetBalanceRequest)       returns (GetBalanceResponse);
+  rpc MutateBalance    (MutateBalanceRequest)    returns (MutateBalanceResponse);
+  rpc ListAccounts     (ListAccountsRequest)     returns (ListAccountsResponse);
+  rpc ValidateAccount  (ValidateAccountRequest)  returns (ValidateAccountResponse);
+}
+
+message GetAccountRequest  { string account_id = 1; }
+message GetAccountResponse {
+  string id = 1; string account_number = 2; string user_id = 3; string type = 4;
+  string currency = 5; int64 balance_minor = 6; int64 available_balance_minor = 7; string status = 8;
+}
+
+message GetBalanceRequest  { string account_id = 1; }
+message GetBalanceResponse { string account_number = 1; int64 balance_minor = 2; int64 available_balance_minor = 3; string currency = 4; }
+
+message MutateBalanceRequest  { string account_id = 1; int64 amount_minor = 2; string operation = 3; string idempotency_key = 4; string description = 5; }
+message MutateBalanceResponse { bool success = 1; int64 new_balance_minor = 2; }
+
+message ListAccountsRequest  { string user_id = 1; }
+message ListAccountsResponse { repeated GetAccountResponse accounts = 1; }
+
+message ValidateAccountRequest  { string account_number = 1; }
+message ValidateAccountResponse { bool valid = 1; string account_id = 2; string user_id = 3; }

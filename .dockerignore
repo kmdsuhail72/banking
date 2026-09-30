@@ -1,0 +1,67 @@
+# =============================================================================
+# .dockerignore — Banking Platform monorepo
+# Excludes dev artifacts to keep build context small and fast
+# =============================================================================
+
+# Version control
+.git
+.gitignore
+
+# Node modules (reinstalled inside Docker)
+node_modules
+**/node_modules
+
+# Build outputs (rebuilt inside Docker)
+dist
+**/dist
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Test artifacts
+coverage
+**/coverage
+**/__tests__
+**/*.spec.ts
+**/*.test.ts
+
+# Local environment files (never in image)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+**/application-*.log
+**/frontend-*.log
+
+# Dev tooling
+.pnpm-store
+.npmrc
+.editorconfig
+
+# Docker files (not needed inside container)
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Terraform / infra (never in runtime image)
+terraform/
+
+# k8s / helm / gitops
+k8s/
+helm/
+gitops/
+infrastructure/
+
+# CI/CD
+.github/
+
+# Docs
+docs/
+*.md
+DEPLOY.md
+README.md
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,130 @@
+---
+# ══════════════════════════════════════════════════════════════════════════════
+# PodDisruptionBudgets — Banking Microservices
+#
+# Strategy:
+#  - Critical services (auth, transaction, payment): minAvailable: 1
+#    → Kubernetes will never evict if only 1 pod is running
+#  - Standard services: minAvailable: 1 (safe during node maintenance)
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── auth-service (critical — all login flows depend on this) ─────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: auth-service-pdb
+  namespace: banking
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: auth-service }
+---
+# ── transaction-service (critical — financial writes) ─────────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: transaction-service-pdb
+  namespace: banking
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: transaction-service }
+---
+# ── payment-service (critical — payment processing) ───────────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: payment-service-pdb
+  namespace: banking
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: payment-service }
+---
+# ── ledger-service (critical — double-entry bookkeeping) ─────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ledger-service-pdb
+  namespace: banking
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: ledger-service }
+---
+# ── account-service ───────────────────────────────────────────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: account-service-pdb
+  namespace: banking
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: account-service }
+---
+# ── customer-service ──────────────────────────────────────────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: customer-service-pdb
+  namespace: banking
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: customer-service }
+---
+# ── wallet-service ────────────────────────────────────────────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: wallet-service-pdb
+  namespace: banking
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: wallet-service }
+---
+# ── kyc-risk-service ──────────────────────────────────────────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: kyc-risk-service-pdb
+  namespace: banking
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: kyc-risk-service }
+---
+# ── beneficiary-service ───────────────────────────────────────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: beneficiary-service-pdb
+  namespace: banking
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: beneficiary-service }
+---
+# ── notification-service ──────────────────────────────────────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: notification-service-pdb
+  namespace: banking
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: notification-service }
+---
+# ── reporting-service ─────────────────────────────────────────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: reporting-service-pdb
+  namespace: banking
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: reporting-service }

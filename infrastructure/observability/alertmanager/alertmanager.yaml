@@ -1,0 +1,157 @@
+﻿# =============================================================================
+# Alertmanager — Banking Platform (Production)
+# Channels: Slack (critical + warning), Email (critical only)
+# =============================================================================
+global:
+  resolve_timeout: 5m
+  # SMTP for email notifications
+  smtp_smarthost: "smtp.gmail.com:587"
+  smtp_from: "banking-alerts@example.com"
+  smtp_auth_username: "${SMTP_USERNAME}"
+  smtp_auth_password: "${SMTP_PASSWORD}"
+  smtp_require_tls: true
+
+route:
+  group_by: ["alertname", "service", "severity"]
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 1h
+  receiver: "slack-warning"
+  routes:
+    # ── Critical alerts: Slack + Email, immediate ───────────────────────────
+    - match:
+        severity: critical
+      group_wait: 0s
+      group_interval: 1m
+      repeat_interval: 15m
+      receiver: "critical-all-channels"
+      continue: true
+
+    # ── Security alerts: dedicated channel ─────────────────────────────────
+    - match:
+        team: security
+      receiver: "slack-security"
+      group_wait: 0s
+      repeat_interval: 30m
+
+    # ── Payment/Transaction alerts: ops channel ────────────────────────────
+    - match_re:
+        service: "(payment|transaction|ledger)-service"
+      receiver: "slack-payments"
+      group_wait: 5s
+      repeat_interval: 30m
+
+    # ── Warning alerts: default Slack channel ─────────────────────────────
+    - match:
+        severity: warning
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      receiver: "slack-warning"
+
+receivers:
+  # ── Critical: Slack #alerts-critical + Email ───────────────────────────────
+  - name: "critical-all-channels"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_CRITICAL}"
+        channel: "#alerts-critical"
+        send_resolved: true
+        username: "Banking AlertManager"
+        icon_emoji: ":rotating_light:"
+        title: "[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}"
+        text: |
+          *Severity:* {{ .CommonLabels.severity | toUpper }}
+          *Service:* {{ .CommonLabels.service }}
+          *Environment:* {{ .CommonLabels.environment | default "production" }}
+          {{ range .Alerts }}
+          *Summary:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Runbook:* {{ .Annotations.runbook_url | default "N/A" }}
+          {{ end }}
+        actions:
+          - type: button
+            text: "View in Grafana"
+            url: "http://grafana.banking.example.com/d/banking-overview"
+          - type: button
+            text: "View in Prometheus"
+            url: "http://prometheus.banking.example.com/alerts"
+    email_configs:
+      - to: "${ALERT_EMAIL_LIST}"
+        send_resolved: true
+        headers:
+          Subject: "[CRITICAL] Banking Platform Alert: {{ .CommonLabels.alertname }}"
+        html: |
+          <h2 style="color:red;">🚨 CRITICAL Alert: {{ .CommonLabels.alertname }}</h2>
+          <table border="1" style="border-collapse:collapse;padding:8px;">
+            <tr><th>Field</th><th>Value</th></tr>
+            <tr><td><strong>Status</strong></td><td>{{ .Status | toUpper }}</td></tr>
+            <tr><td><strong>Service</strong></td><td>{{ .CommonLabels.service }}</td></tr>
+            <tr><td><strong>Severity</strong></td><td>{{ .CommonLabels.severity }}</td></tr>
+          </table>
+          {{ range .Alerts }}
+          <h3>Alert Details</h3>
+          <p><strong>Summary:</strong> {{ .Annotations.summary }}</p>
+          <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+          <p><strong>Runbook:</strong> <a href="{{ .Annotations.runbook_url }}">{{ .Annotations.runbook_url }}</a></p>
+          {{ end }}
+          <p><a href="http://grafana.banking.example.com">Open Grafana Dashboard</a></p>
+
+  # ── Warning: Slack #alerts-warning ────────────────────────────────────────
+  - name: "slack-warning"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_WARNING}"
+        channel: "#alerts-warning"
+        send_resolved: true
+        username: "Banking AlertManager"
+        icon_emoji: ":warning:"
+        title: "[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}"
+        text: |
+          *Severity:* {{ .CommonLabels.severity }}
+          *Service:* {{ .CommonLabels.service }}
+          {{ range .Alerts }}*Summary:* {{ .Annotations.summary }}{{ end }}
+
+  # ── Payments: Slack #alerts-payments ─────────────────────────────────────
+  - name: "slack-payments"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_PAYMENTS}"
+        channel: "#alerts-payments"
+        send_resolved: true
+        username: "Banking AlertManager"
+        icon_emoji: ":dollar:"
+        title: "[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}"
+        text: |
+          *Service:* {{ .CommonLabels.service }}
+          *Severity:* {{ .CommonLabels.severity }}
+          {{ range .Alerts }}
+          *Summary:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+
+  # ── Security: Slack #alerts-security ─────────────────────────────────────
+  - name: "slack-security"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_SECURITY}"
+        channel: "#alerts-security"
+        send_resolved: true
+        username: "Banking Security Monitor"
+        icon_emoji: ":shield:"
+        title: "[SECURITY] {{ .CommonLabels.alertname }}"
+        text: |
+          *Service:* {{ .CommonLabels.service }}
+          {{ range .Alerts }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+
+inhibit_rules:
+  # Suppress warning if critical is already firing for same service/alert
+  - source_match:
+      severity: "critical"
+    target_match:
+      severity: "warning"
+    equal: ["alertname", "service"]
+  # Suppress individual service alerts if the whole cluster is down
+  - source_match:
+      alertname: "ClusterDown"
+    target_match_re:
+      alertname: ".*"
+    equal: ["environment"]

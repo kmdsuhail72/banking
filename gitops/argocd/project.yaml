@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: banking
+  namespace: argocd
+spec:
+  description: Banking backend GitOps environments
+  sourceRepos:
+    - https://github.com/kmdsuhail72/banking.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: banking-staging
+    - server: https://kubernetes.default.svc
+      namespace: banking-production
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: apps
+      kind: Deployment
+    - group: ""
+      kind: Service

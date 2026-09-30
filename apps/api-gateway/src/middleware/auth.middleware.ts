@@ -23,9 +23,12 @@ export class AuthMiddleware implements NestMiddleware {
   ];
 
   use(req: Request, res: Response, next: NextFunction) {
-    const path = req.path;
+    // Always allow OPTIONS preflight requests (CORS)
+    if (req.method === 'OPTIONS') return next();
 
-    const isPublic = this.publicPaths.some((regex) => regex.test(path));
+    const fullPath = req.originalUrl.split('?')[0]; // strip query params
+
+    const isPublic = this.publicPaths.some((regex) => regex.test(fullPath));
 
     const authHeader = req.headers['authorization'];
     let token: string | null = null;

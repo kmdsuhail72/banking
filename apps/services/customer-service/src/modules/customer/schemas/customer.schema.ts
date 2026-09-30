@@ -66,11 +66,18 @@ export class Customer {
   address?: CustomerAddress;
 
   @Prop({
+    type: String,
     required: true,
     enum: KycStatus,
     default: KycStatus.PENDING,
   })
   kycStatus: KycStatus;
+
+  @Prop({ trim: true })
+  kycDocumentType?: string;
+
+  @Prop({ trim: true })
+  kycDocumentNumber?: string;
 
   @Prop({
     default: 0,

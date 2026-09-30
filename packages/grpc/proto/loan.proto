@@ -1,0 +1,22 @@
+syntax = "proto3";
+package banking.loan;
+option optimize_for = SPEED;
+
+service LoanService {
+  rpc ApplyLoan      (ApplyLoanRequest)     returns (ApplyLoanResponse);
+  rpc GetLoan        (GetLoanRequest)       returns (GetLoanResponse);
+  rpc ApproveLoan    (ApproveLoanRequest)   returns (ApproveLoanResponse);
+  rpc DisburseLoan   (DisburseLoanRequest)  returns (DisburseLoanResponse);
+}
+
+message ApplyLoanRequest  { string user_id = 1; int64 amount_minor = 2; string currency = 3; int32 tenure_months = 4; string loan_type = 5; }
+message ApplyLoanResponse { string loan_id = 1; string status = 2; double interest_rate = 3; int64 emi_minor = 4; }
+
+message GetLoanRequest  { string loan_id = 1; }
+message GetLoanResponse { string id = 1; string user_id = 2; int64 principal_minor = 3; double interest_rate = 4; int32 tenure_months = 5; string status = 6; int64 outstanding_minor = 7; }
+
+message ApproveLoanRequest  { string loan_id = 1; string approved_by = 2; }
+message ApproveLoanResponse { bool success = 1; }
+
+message DisburseLoanRequest  { string loan_id = 1; string account_id = 2; }
+message DisburseLoanResponse { bool success = 1; string transaction_id = 2; }

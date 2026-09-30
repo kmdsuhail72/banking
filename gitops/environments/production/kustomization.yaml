@@ -1,0 +1,17 @@
+{
+  "apiVersion": "kustomize.config.k8s.io/v1beta1",
+  "kind": "Kustomization",
+  "namespace": "banking",
+  "resources": [],
+  "helmCharts": [
+    {
+      "name": "banking-app",
+      "releaseName": "banking",
+      "namespace": "banking",
+      "valuesFile": "../../helm/banking-app/values.yaml",
+      "additionalValuesFiles": [
+        "../../helm/banking-app/values-production.yaml"
+      ]
+    }
+  ]
+}

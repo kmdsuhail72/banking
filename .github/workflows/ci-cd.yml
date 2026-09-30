@@ -1,0 +1,676 @@
+﻿# =============================================================================
+# Banking Platform — GitHub Actions CI/CD Pipeline
+#
+# Authentication: GitHub OIDC → AWS IAM Role (no long-lived access keys)
+#
+# Secrets (Settings → Secrets → Actions):
+#   AWS_ACCOUNT_ID, GITHUB_ACTIONS_ROLE_ARN, SLACK_WEBHOOK_URL,
+#   SMTP_USERNAME, SMTP_PASSWORD, RELEASE_EMAIL_LIST
+#
+# Repository variables (Settings → Variables → Actions):
+#   AWS_REGION, EKS_CLUSTER_PROD, EKS_CLUSTER_STG
+# =============================================================================
+
+name: "CI/CD — Banking Platform"
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ["v*.*.*"]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment for manual deploy"
+        required: true
+        default: "staging"
+        type: choice
+        options: [staging, production]
+      force_rebuild:
+        description: "Force rebuild all images (bypass GHA cache)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: cicd-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: >-
+    ${{
+      !startsWith(github.ref, 'refs/tags/') &&
+      github.event_name != 'workflow_dispatch'
+    }}
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "11.24.0"
+  AWS_REGION:     ${{ vars.AWS_REGION || 'ap-south-1' }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  ECR_REGISTRY:   "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION || 'ap-south-1' }}.amazonaws.com"
+  ECR_REPOSITORY: banking
+  GHA_ROLE_ARN:   ${{ secrets.GITHUB_ACTIONS_ROLE_ARN }}
+  EKS_CLUSTER_PROD: ${{ vars.EKS_CLUSTER_PROD || 'banking-eks-production' }}
+  EKS_CLUSTER_STG:  ${{ vars.EKS_CLUSTER_STG  || 'banking-eks-staging'    }}
+  HELM_RELEASE: banking
+  HELM_CHART:   helm/banking-app
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # STAGE 1 — Quality Gate: Prettier · ESLint · TypeScript typecheck
+  # ---------------------------------------------------------------------------
+  quality:
+    name: "Stage-1 | Quality Gate"
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Prettier — format check
+        run: pnpm exec prettier --check "**/*.{ts,tsx,js,json,md,yml,yaml}"
+      - name: ESLint — lint all packages
+        run: pnpm -r --if-present run lint
+      - name: TypeScript — type-check all packages
+        run: pnpm -r --if-present run typecheck
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        with:
+          payload: |
+            {"text":":x: *Quality Gate FAILED* on `${{ github.ref_name }}`","attachments":[{"color":"danger","fields":[{"title":"Actor","value":"${{ github.actor }}","short":true},{"title":"Run","value":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}","short":false}]}]}
+
+  # ---------------------------------------------------------------------------
+  # STAGE 2a — Unit + Integration Tests (Postgres · Redis · Kafka)
+  # ---------------------------------------------------------------------------
+  test:
+    name: "Stage-2a | Unit + Integration Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB:       banking_test
+          POSTGRES_USER:     banking
+          POSTGRES_PASSWORD: test-password-ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:8-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-retries 5
+      kafka:
+        image: apache/kafka:3.9.0
+        ports: ["9092:9092"]
+        env:
+          KAFKA_PROCESS_ROLES:                    broker,controller
+          KAFKA_NODE_ID:                          1
+          KAFKA_CONTROLLER_QUORUM_VOTERS:         "1@localhost:9093"
+          KAFKA_LISTENERS:                        PLAINTEXT://:9092,CONTROLLER://:9093
+          KAFKA_ADVERTISED_LISTENERS:             PLAINTEXT://localhost:9092
+          KAFKA_CONTROLLER_LISTENER_NAMES:        CONTROLLER
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP:   CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_AUTO_CREATE_TOPICS_ENABLE:        "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Run all test suites
+        env:
+          DB_HOST:            localhost
+          DB_PORT:            5432
+          DB_NAME:            banking_test
+          DB_USER:            banking
+          DB_PASS:            test-password-ci
+          REDIS_HOST:         localhost
+          REDIS_PORT:         6379
+          KAFKA_BROKERS:      localhost:9092
+          NODE_ENV:           test
+          JWT_SECRET:         test-jwt-secret-for-ci-only
+          JWT_REFRESH_SECRET: test-refresh-secret-for-ci-only
+        run: pnpm -r --if-present run test -- --passWithNoTests --forceExit --coverage
+      - name: Upload test coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage-${{ github.sha }}
+          path: "**/coverage/"
+          retention-days: 14
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        with:
+          payload: |
+            {"text":":x: *Test Suite FAILED* on `${{ github.ref_name }}`","attachments":[{"color":"danger","fields":[{"title":"Actor","value":"${{ github.actor }}","short":true},{"title":"Run","value":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}","short":false}]}]}
+
+  # ---------------------------------------------------------------------------
+  # STAGE 2b — Dependency Review (pull requests only)
+  # ---------------------------------------------------------------------------
+  dependency-review:
+    name: "Stage-2b | Dependency Review (PR)"
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+          deny-licenses: LGPL-2.0, GPL-2.0, GPL-3.0
+
+  # ---------------------------------------------------------------------------
+  # STAGE 2c — Helm Chart Lint + Dry-run
+  # ---------------------------------------------------------------------------
+  helm-lint:
+    name: "Stage-2c | Helm Lint"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.17.0
+      - name: Lint — default values
+        run: helm lint ${{ env.HELM_CHART }}
+      - name: Lint — production values
+        run: helm lint ${{ env.HELM_CHART }} -f ${{ env.HELM_CHART }}/values.yaml -f ${{ env.HELM_CHART }}/values-production.yaml
+      - name: Lint — staging values
+        run: helm lint ${{ env.HELM_CHART }} -f ${{ env.HELM_CHART }}/values.yaml -f ${{ env.HELM_CHART }}/values-staging.yaml
+      - name: Dry-run template render (object count)
+        run: |
+          echo "Kubernetes object distribution (production):"
+          helm template ${{ env.HELM_RELEASE }} ${{ env.HELM_CHART }} \
+            -f ${{ env.HELM_CHART }}/values.yaml \
+            -f ${{ env.HELM_CHART }}/values-production.yaml \
+            | grep "^kind:" | sort | uniq -c | sort -rn
+
+  # ---------------------------------------------------------------------------
+  # STAGE 3 — Docker Build + Trivy Scan + Push to Amazon ECR
+  #
+  # Runs only on push to main/develop or semver tags.
+  # Matrix: 32 services in parallel (max 16 concurrent runners).
+  #
+  # Security gate:
+  #   Trivy scans HIGH+CRITICAL → exit-code 1 → job fails → image NOT deployed.
+  #   SARIF is always uploaded to GitHub Security tab.
+  #
+  # Image tag strategy:
+  #   sha-<7char>  — immutable, used by ArgoCD / Helm values files
+  #   latest       — floating, only on main branch
+  #   v*.*.*       — semver release tags
+  # ---------------------------------------------------------------------------
+  build-push-ecr:
+    name: "Stage-3 | Build+Scan+Push: ${{ matrix.service.name }}"
+    if: |
+      github.event_name == 'push' &&
+      (
+        github.ref == 'refs/heads/main'    ||
+        github.ref == 'refs/heads/develop' ||
+        startsWith(github.ref, 'refs/tags/v')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [quality, test, helm-lint]
+    permissions:
+      contents: read
+      id-token: write        # GitHub OIDC → AWS
+      security-events: write # Trivy SARIF upload
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        service:
+          # API Gateway
+          - { name: api-gateway,               context: apps/api-gateway }
+          # Core Banking
+          - { name: auth-service,              context: apps/services/auth-service }
+          - { name: authz-service,             context: apps/services/authz-service }
+          - { name: customer-service,          context: apps/services/customer-service }
+          - { name: account-service,           context: apps/services/account-service }
+          - { name: transaction-service,       context: apps/services/transaction-service }
+          - { name: payment-service,           context: apps/services/payment-service }
+          - { name: wallet-service,            context: apps/services/wallet-service }
+          - { name: ledger-service,            context: apps/services/ledger-service }
+          # Lending
+          - { name: loan-service,              context: apps/services/loan-service }
+          - { name: emi-service,               context: apps/services/emi-service }
+          - { name: fixed-deposit-service,     context: apps/services/fixed-deposit-service }
+          - { name: recurring-deposit-service, context: apps/services/recurring-deposit-service }
+          - { name: interest-service,          context: apps/services/interest-service }
+          # Cards & Payments
+          - { name: card-service,              context: apps/services/card-service }
+          - { name: beneficiary-service,       context: apps/services/beneficiary-service }
+          - { name: fee-service,               context: apps/services/fee-service }
+          - { name: exchange-service,          context: apps/services/exchange-service }
+          # Risk & Compliance
+          - { name: kyc-risk-service,          context: apps/services/kyc-risk-service }
+          - { name: fraud-service,             context: apps/services/fraud-service }
+          - { name: compliance-service,        context: apps/services/compliance-service }
+          - { name: audit-service,             context: apps/services/audit-service }
+          - { name: limit-service,             context: apps/services/limit-service }
+          # Customer-facing & Support
+          - { name: notification-service,      context: apps/services/notification-service }
+          - { name: statement-service,         context: apps/services/statement-service }
+          - { name: document-service,          context: apps/services/document-service }
+          - { name: support-service,           context: apps/services/support-service }
+          - { name: admin-service,             context: apps/services/admin-service }
+          # Data & Operations
+          - { name: reporting-service,         context: apps/services/reporting-service }
+          - { name: analytics-service,         context: apps/services/analytics-service }
+          - { name: scheduler-service,         context: apps/services/scheduler-service }
+          # Frontend
+          - { name: frontend,                  context: apps/frontend }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:v0.18.0
+            network=host
+
+      # GitHub OIDC → IAM Role — no long-lived AWS credentials stored in GitHub
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume:    ${{ env.GHA_ROLE_ARN }}
+          aws-region:        ${{ env.AWS_REGION }}
+          role-session-name: gha-banking-${{ matrix.service.name }}-${{ github.run_number }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Idempotent: creates the repo on first run, skips if it already exists
+      - name: Ensure ECR repository exists
+        run: |
+          REPO="${{ env.ECR_REPOSITORY }}/${{ matrix.service.name }}"
+          aws ecr describe-repositories --repository-names "${REPO}" \
+            --region "${{ env.AWS_REGION }}" 2>/dev/null \
+          || aws ecr create-repository \
+            --repository-name "${REPO}" \
+            --region "${{ env.AWS_REGION }}" \
+            --image-scanning-configuration scanOnPush=true \
+            --encryption-configuration encryptionType=AES256 \
+            --tags Key=Project,Value=banking Key=Service,Value=${{ matrix.service.name }} Key=ManagedBy,Value=github-actions
+
+      - name: Set image tag (short SHA)
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "IMAGE_TAG=sha-${SHORT_SHA}"  >> "$GITHUB_ENV"
+          echo "IMAGE_FULL=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}/${{ matrix.service.name }}:sha-${SHORT_SHA}" >> "$GITHUB_ENV"
+
+      - name: Generate image tags and OCI labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}/${{ matrix.service.name }}
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=ref,event=tag
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
+          labels: |
+            org.opencontainers.image.title=${{ matrix.service.name }}
+            org.opencontainers.image.description=Banking Platform — ${{ matrix.service.name }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            com.banking.service=${{ matrix.service.name }}
+            com.banking.build-number=${{ github.run_number }}
+
+      # Root Dockerfile: --build-arg SERVICE selects the NestJS app to bundle
+      - name: Build and push Docker image — ${{ matrix.service.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          build-args: |
+            SERVICE=${{ matrix.service.name }}
+            BUILD_REV=${{ github.sha }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha,scope=${{ matrix.service.name }}
+            type=registry,ref=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}/${{ matrix.service.name }}:cache
+          cache-to: |
+            type=gha,mode=max,scope=${{ matrix.service.name }}
+            type=registry,ref=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}/${{ matrix.service.name }}:cache,mode=max
+          provenance: mode=max
+          sbom: true
+          no-cache: ${{ inputs.force_rebuild == true }}
+
+      # ── Trivy Security Scan ─────────────────────────────────────────────────
+      # exit-code: "1" — HIGH or CRITICAL finding FAILS the job.
+      # Image was already pushed; if Trivy fails the GitOps/deploy stages
+      # will not run because they depend on this job passing.
+      - name: Trivy vulnerability scan — ${{ matrix.service.name }}
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref:      "${{ env.IMAGE_FULL }}"
+          format:         sarif
+          output:         "trivy-${{ matrix.service.name }}.sarif"
+          severity:       HIGH,CRITICAL
+          exit-code:      "1"
+          ignore-unfixed: true
+          vuln-type:      "os,library"
+          scanners:       "vuln,secret,misconfig"
+          timeout:        "15m"
+
+      - name: Upload Trivy SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-${{ matrix.service.name }}.sarif"
+          category:   "trivy-${{ matrix.service.name }}"
+
+      - name: Notify Slack — security scan blocked
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        with:
+          payload: |
+            {"text":":red_circle: *Security Scan BLOCKED* — `${{ matrix.service.name }}` has HIGH/CRITICAL CVEs","attachments":[{"color":"danger","fields":[{"title":"Service","value":"${{ matrix.service.name }}","short":true},{"title":"Branch","value":"${{ github.ref_name }}","short":true},{"title":"Security Tab","value":"${{ github.server_url }}/${{ github.repository }}/security/code-scanning","short":false}]}]}
+
+      - name: Export image tag artifact
+        run: echo "${{ matrix.service.name }}=${{ env.IMAGE_TAG }}" > /tmp/tags.env
+
+      - name: Upload image tag artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-tag-${{ matrix.service.name }}
+          path: /tmp/tags.env
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # STAGE 4 — GitOps: bump imageTag in Helm values → ArgoCD detects and deploys
+  # ---------------------------------------------------------------------------
+  gitops-update:
+    name: "Stage-4 | GitOps: bump imageTag"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build-push-ecr]
+    if: |
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    permissions:
+      contents: write
+    env:
+      TARGET_ENV:  ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      VALUES_FILE: ${{ github.ref == 'refs/heads/main' && 'helm/banking-app/values-production.yaml' || 'helm/banking-app/values-staging.yaml' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref:   ${{ github.ref_name }}
+      - name: Download all image tag artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: image-tag-*
+          merge-multiple: true
+          path: /tmp/tags/
+      - name: Patch imageTag in Helm values file
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          sed -i "s|imageTag:.*|imageTag: \"sha-${SHORT_SHA}\"|" "${{ env.VALUES_FILE }}"
+          echo "Patched imageTag -> sha-${SHORT_SHA} in ${{ env.VALUES_FILE }}"
+      - name: Commit and push updated values
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          SHORT_SHA="${GITHUB_SHA::7}"
+          if git diff --quiet; then
+            echo "No changes — imageTag already at sha-${SHORT_SHA}"
+            exit 0
+          fi
+          git add "${{ env.VALUES_FILE }}"
+          git commit -m "gitops(${{ env.TARGET_ENV }}): bump all images to sha-${SHORT_SHA} [skip ci]"
+          git push origin "${{ github.ref_name }}"
+          echo "ArgoCD will detect this commit and roll out sha-${SHORT_SHA}."
+
+  # ---------------------------------------------------------------------------
+  # STAGE 5a — Deploy to Staging (develop branch → auto, no approval)
+  # ---------------------------------------------------------------------------
+  deploy-staging:
+    name: "Stage-5a | Deploy -> Staging EKS (auto)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [gitops-update]
+    if: |
+      github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url:  https://banking-staging.example.com
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume:    ${{ env.GHA_ROLE_ARN }}
+          aws-region:        ${{ env.AWS_REGION }}
+          role-session-name: gha-staging-deploy-${{ github.run_number }}
+      - name: Update kubeconfig — staging EKS
+        run: aws eks update-kubeconfig --region "${{ env.AWS_REGION }}" --name "${{ env.EKS_CLUSTER_STG }}" --alias staging
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.17.0
+      - name: Helm upgrade — staging
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          helm upgrade --install ${{ env.HELM_RELEASE }} ${{ env.HELM_CHART }} \
+            --namespace banking --create-namespace \
+            -f ${{ env.HELM_CHART }}/values.yaml \
+            -f ${{ env.HELM_CHART }}/values-staging.yaml \
+            --set global.imageTag="sha-${SHORT_SHA}" \
+            --set global.registry="${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}" \
+            --wait --timeout 10m --atomic --history-max 5 \
+            --kube-context staging
+      - name: Verify staging rollout
+        run: |
+          kubectl rollout status deployment --namespace banking --timeout=5m --context staging
+          kubectl get pods --namespace banking --context staging
+      - name: Notify Slack — staging deployed
+        if: success()
+        uses: slackapi/slack-github-action@v1.27.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        with:
+          payload: |
+            {"text":":white_check_mark: *Staging Deploy SUCCESS* — `${{ github.ref_name }}`","attachments":[{"color":"good","fields":[{"title":"Actor","value":"${{ github.actor }}","short":true},{"title":"URL","value":"https://banking-staging.example.com","short":false}]}]}
+      - name: Notify Slack — staging FAILED
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        with:
+          payload: |
+            {"text":":x: *Staging Deploy FAILED*","attachments":[{"color":"danger","fields":[{"title":"Run","value":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}","short":false}]}]}
+
+  # ---------------------------------------------------------------------------
+  # STAGE 5b — Deploy to Production (main branch → requires GitHub Env approval)
+  # Smoke test + auto-rollback on failure
+  # ---------------------------------------------------------------------------
+  deploy-production:
+    name: "Stage-5b | Deploy -> Production EKS [approval required]"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [gitops-update]
+    if: |
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url:  https://banking.example.com
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume:    ${{ env.GHA_ROLE_ARN }}
+          aws-region:        ${{ env.AWS_REGION }}
+          role-session-name: gha-production-deploy-${{ github.run_number }}
+      - name: Update kubeconfig — production EKS
+        run: aws eks update-kubeconfig --region "${{ env.AWS_REGION }}" --name "${{ env.EKS_CLUSTER_PROD }}" --alias production
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.17.0
+      - name: Helm upgrade — production
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          helm upgrade --install ${{ env.HELM_RELEASE }} ${{ env.HELM_CHART }} \
+            --namespace banking --create-namespace \
+            -f ${{ env.HELM_CHART }}/values.yaml \
+            -f ${{ env.HELM_CHART }}/values-production.yaml \
+            --set global.imageTag="sha-${SHORT_SHA}" \
+            --set global.registry="${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}" \
+            --wait --timeout 15m --atomic --history-max 10 \
+            --kube-context production
+      - name: Verify production rollout
+        run: |
+          kubectl rollout status deployment --namespace banking --timeout=10m --context production
+          kubectl get pods --namespace banking --context production
+      - name: Production smoke test
+        run: |
+          echo "Waiting 30s for pods to stabilise..."
+          sleep 30
+          curl -sf --max-time 15 https://banking.example.com/health \
+            && echo "Smoke test PASSED" \
+            || (echo "Smoke test FAILED — initiating rollback" && exit 1)
+      - name: Auto-rollback on failure
+        if: failure()
+        run: |
+          helm rollback ${{ env.HELM_RELEASE }} 0 \
+            --namespace banking --wait --timeout 10m --kube-context production
+          echo "Rollback complete."
+      - name: Notify Slack — production deployed
+        if: success()
+        uses: slackapi/slack-github-action@v1.27.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        with:
+          payload: |
+            {"text":":rocket: *Production Deploy SUCCESS*","attachments":[{"color":"good","fields":[{"title":"Environment","value":"Production (AWS EKS)","short":true},{"title":"Actor","value":"${{ github.actor }}","short":true},{"title":"Image Tag","value":"sha-${{ github.sha }}","short":true},{"title":"URL","value":"https://banking.example.com","short":true},{"title":"Run","value":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}","short":false}]}]}
+      - name: Notify Slack — production FAILED + rollback
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        with:
+          payload: |
+            {"text":":rotating_light: *PRODUCTION Deploy FAILED — ROLLBACK INITIATED*","attachments":[{"color":"danger","fields":[{"title":"Branch","value":"${{ github.ref_name }}","short":true},{"title":"Actor","value":"${{ github.actor }}","short":true},{"title":"Run","value":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}","short":false}]}]}
+
+  # ---------------------------------------------------------------------------
+  # STAGE 6 — Release Notification (semver tags v*.*.* only)
+  # ---------------------------------------------------------------------------
+  release-notify:
+    name: "Stage-6 | Release Notification"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [deploy-production]
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "initial")
+          CHANGES=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges | head -30)
+          { echo "changes<<EOF"; echo "$CHANGES"; echo "EOF"; } >> "$GITHUB_OUTPUT"
+      - name: Notify Slack — new release
+        uses: slackapi/slack-github-action@v1.27.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        with:
+          payload: |
+            {"text":":package: *New Release: ${{ github.ref_name }}* — Banking Platform","attachments":[{"color":"good","fields":[{"title":"Version","value":"${{ github.ref_name }}","short":true},{"title":"Released by","value":"${{ github.actor }}","short":true},{"title":"Changes","value":"${{ steps.changelog.outputs.changes }}","short":false},{"title":"Release Notes","value":"${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}","short":false}]}]}
+      - name: Send release email
+        uses: dawidd6/action-send-mail@v4
+        with:
+          server_address: smtp.gmail.com
+          server_port:    587
+          username:  ${{ secrets.SMTP_USERNAME }}
+          password:  ${{ secrets.SMTP_PASSWORD }}
+          subject:   "Banking Platform ${{ github.ref_name }} Released to Production"
+          to:        ${{ secrets.RELEASE_EMAIL_LIST }}
+          from:      "Banking CI/CD <noreply@banking.example.com>"
+          html_body: |
+            <h2>Banking Platform ${{ github.ref_name }} Released to Production</h2>
+            <table>
+              <tr><td><strong>Released by:</strong></td><td>${{ github.actor }}</td></tr>
+              <tr><td><strong>Environment:</strong></td><td>Production (AWS EKS — ${{ env.EKS_CLUSTER_PROD }})</td></tr>
+              <tr><td><strong>Region:</strong></td>     <td>${{ env.AWS_REGION }}</td></tr>
+              <tr><td><strong>Image Tag:</strong></td>  <td>sha-${{ github.sha }}</td></tr>
+              <tr><td><strong>Registry:</strong></td>   <td>${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}</td></tr>
+            </table>
+            <h3>Changes in ${{ github.ref_name }}</h3>
+            <pre>${{ steps.changelog.outputs.changes }}</pre>
+            <p><a href="${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}">View Full Release Notes</a></p>
+            <p><a href="https://banking.example.com">Open Banking Platform</a></p>
+
+  # ---------------------------------------------------------------------------
+  # Branch protection status-check alias
+  # Configure "ci / gate" as the required check in Settings -> Branches.
+  # ---------------------------------------------------------------------------
+  ci-gate:
+    name: "ci / gate — all checks passed"
+    runs-on: ubuntu-latest
+    needs: [quality, test, helm-lint]
+    if: always()
+    steps:
+      - name: Evaluate gate
+        run: |
+          Q="${{ needs.quality.result }}"
+          T="${{ needs.test.result }}"
+          H="${{ needs.helm-lint.result }}"
+          echo "quality=${Q}  test=${T}  helm-lint=${H}"
+          if [[ "$Q" == "failure" || "$T" == "failure" || "$H" == "failure" ]]; then
+            echo "One or more required checks FAILED." && exit 1
+          fi
+          echo "All required checks PASSED"

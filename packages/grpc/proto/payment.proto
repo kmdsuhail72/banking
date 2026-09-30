@@ -1,0 +1,15 @@
+﻿syntax = "proto3";
+package banking.payment;
+option optimize_for = SPEED;
+
+service PaymentService {
+  rpc InitiatePayment  (InitiatePaymentRequest)  returns (InitiatePaymentResponse);
+  rpc GetPayment       (GetPaymentRequest)       returns (GetPaymentResponse);
+  rpc RefundPayment    (RefundPaymentRequest)    returns (RefundPaymentResponse);
+}
+message InitiatePaymentRequest  { string user_id = 1; string method = 2; int64 amount_minor = 3; string from_account_id = 4; string to_account_id = 5; string idempotency_key = 6; string description = 7; }
+message InitiatePaymentResponse { string payment_id = 1; string status = 2; }
+message GetPaymentRequest  { string payment_id = 1; }
+message GetPaymentResponse { string id = 1; string status = 2; string method = 3; int64 amount_minor = 4; string currency = 5; string created_at = 6; }
+message RefundPaymentRequest  { string payment_id = 1; string reason = 2; string idempotency_key = 3; }
+message RefundPaymentResponse { bool success = 1; string refund_transaction_id = 2; }

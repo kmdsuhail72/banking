@@ -1,0 +1,19 @@
+{{- if .Values.pdb.enabled }}
+{{- range $key, $svc := .Values.services }}
+{{- if $svc.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $svc.name }}-pdb
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "banking.labels" $ | nindent 4 }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $svc.name }}
+{{- end }}
+{{- end }}
+{{- end }}

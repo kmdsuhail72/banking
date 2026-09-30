@@ -1,5 +1,416 @@
-frontend:
-  image: banking-frontend:latest
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Banking Platform â€” Helm Values (defaults)
+# Override with values-staging.yaml or values-production.yaml
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-backend:
-  image: banking-backend:latest
+global:
+  # TODO: Replace with your real ECR registry (output of: terraform output ecr_repository_urls)
+  registry: "111122223333.dkr.ecr.us-east-1.amazonaws.com"
+  imageTag: "latest"
+  pullPolicy: IfNotPresent
+  namespace: banking
+
+  # AWS — used by External Secrets Operator and IRSA annotations
+  clusterName:        "banking-eks-production"       # must match Terraform cluster_name + environment
+  awsRegion:          "us-east-1"
+  appSecretsRoleArn:  ""   # TODO: set to terraform output app_secrets_role_arn
+
+  otel:
+    endpoint: "http://otel-collector.observability.svc.cluster.local:4318"
+
+  # PostgreSQL connection (shared DB, per-service table prefixes)
+  postgres:
+    host: "postgres-headless"
+    port: 5432
+    database: "banking"
+    user: "banking"
+
+  # Redis connection
+  redis:
+    host: "redis-headless"
+    port: 6379
+
+  # Kafka brokers
+  kafka:
+    brokers: "kafka-headless:9092"
+
+# â”€â”€ Per-service configuration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Each service block: enabled, port, replicas, resources, hpa
+services:
+  apiGateway:
+    enabled: true
+    name: api-gateway
+    port: 3000
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "500m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+
+  auth:
+    enabled: true
+    name: auth-service
+    port: 4001
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "500m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+
+  customer:
+    enabled: true
+    name: customer-service
+    port: 4002
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "500m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+
+  account:
+    enabled: true
+    name: account-service
+    port: 4003
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "500m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+
+  transaction:
+    enabled: true
+    name: transaction-service
+    port: 4004
+    replicas: 2
+    resources:
+      requests: { cpu: "200m", memory: "384Mi" }
+      limits:   { cpu: "800m", memory: "768Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 15, cpuUtilization: 65, memUtilization: 75 }
+
+  payment:
+    enabled: true
+    name: payment-service
+    port: 4005
+    replicas: 2
+    resources:
+      requests: { cpu: "200m", memory: "384Mi" }
+      limits:   { cpu: "800m", memory: "768Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 12, cpuUtilization: 65, memUtilization: 75 }
+
+  wallet:
+    enabled: true
+    name: wallet-service
+    port: 4006
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "500m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+
+  ledger:
+    enabled: true
+    name: ledger-service
+    port: 4007
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "500m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+
+  beneficiary:
+    enabled: true
+    name: beneficiary-service
+    port: 4008
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "400m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+
+  kycRisk:
+    enabled: true
+    name: kyc-risk-service
+    port: 4009
+    replicas: 2
+    resources:
+      requests: { cpu: "200m", memory: "512Mi" }
+      limits:   { cpu: "1000m", memory: "1Gi" }
+    hpa: { minReplicas: 2, maxReplicas: 12, cpuUtilization: 60, memUtilization: 75 }
+
+  notification:
+    enabled: true
+    name: notification-service
+    port: 4010
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "400m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+
+  reporting:
+    enabled: true
+    name: reporting-service
+    port: 4011
+    replicas: 2
+    resources:
+      requests: { cpu: "200m", memory: "512Mi" }
+      limits:   { cpu: "1000m", memory: "1Gi" }
+    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 70 }
+
+  # â”€â”€ New Services (v2) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  authz:
+    enabled: true
+    name: authz-service
+    port: 4012
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "500m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+
+  card:
+    enabled: true
+    name: card-service
+    port: 4013
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "500m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+
+  loan:
+    enabled: true
+    name: loan-service
+    port: 4014
+    replicas: 2
+    resources:
+      requests: { cpu: "200m", memory: "384Mi" }
+      limits:   { cpu: "800m", memory: "768Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 65, memUtilization: 75 }
+
+  emi:
+    enabled: true
+    name: emi-service
+    port: 4015
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "400m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+
+  fixedDeposit:
+    enabled: true
+    name: fixed-deposit-service
+    port: 4016
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "400m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+
+  recurringDeposit:
+    enabled: true
+    name: recurring-deposit-service
+    port: 4017
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "400m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+
+  fraud:
+    enabled: true
+    name: fraud-service
+    port: 4018
+    replicas: 2
+    resources:
+      requests: { cpu: "300m", memory: "512Mi" }
+      limits:   { cpu: "1000m", memory: "1Gi" }
+    hpa: { minReplicas: 2, maxReplicas: 15, cpuUtilization: 60, memUtilization: 70 }
+
+  compliance:
+    enabled: true
+    name: compliance-service
+    port: 4019
+    replicas: 2
+    resources:
+      requests: { cpu: "200m", memory: "384Mi" }
+      limits:   { cpu: "800m", memory: "768Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 65, memUtilization: 75 }
+
+  audit:
+    enabled: true
+    name: audit-service
+    port: 4020
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "500m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+
+  limit:
+    enabled: true
+    name: limit-service
+    port: 4021
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "500m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 70, memUtilization: 80 }
+
+  interest:
+    enabled: true
+    name: interest-service
+    port: 4022
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "500m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+
+  statement:
+    enabled: true
+    name: statement-service
+    port: 4023
+    replicas: 2
+    resources:
+      requests: { cpu: "200m", memory: "384Mi" }
+      limits:   { cpu: "800m", memory: "768Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 65, memUtilization: 75 }
+
+  support:
+    enabled: true
+    name: support-service
+    port: 4024
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "400m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+
+  analytics:
+    enabled: true
+    name: analytics-service
+    port: 4025
+    replicas: 2
+    resources:
+      requests: { cpu: "300m", memory: "512Mi" }
+      limits:   { cpu: "1000m", memory: "1Gi" }
+    hpa: { minReplicas: 2, maxReplicas: 10, cpuUtilization: 65, memUtilization: 70 }
+
+  fee:
+    enabled: true
+    name: fee-service
+    port: 4026
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "400m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+
+  exchange:
+    enabled: true
+    name: exchange-service
+    port: 4027
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "400m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+
+  document:
+    enabled: true
+    name: document-service
+    port: 4028
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "400m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 8, cpuUtilization: 70, memUtilization: 80 }
+
+  scheduler:
+    enabled: true
+    name: scheduler-service
+    port: 4029
+    replicas: 1
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "500m", memory: "512Mi" }
+    hpa: { minReplicas: 1, maxReplicas: 2, cpuUtilization: 70, memUtilization: 80 }
+
+  admin:
+    enabled: true
+    name: admin-service
+    port: 4030
+    replicas: 2
+    resources:
+      requests: { cpu: "100m", memory: "256Mi" }
+      limits:   { cpu: "400m", memory: "512Mi" }
+    hpa: { minReplicas: 2, maxReplicas: 4, cpuUtilization: 70, memUtilization: 80 }
+
+# â”€â”€ Frontend â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+frontend:
+  enabled: true
+  port: 80
+  replicas: 2
+  resources:
+    requests: { cpu: "50m",  memory: "128Mi" }
+    limits:   { cpu: "200m", memory: "256Mi" }
+
+# â”€â”€ StatefulSets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+
+postgres:
+  enabled: true
+  image: postgres:17-alpine
+  replicas: 1
+  port: 5432
+  storage: 30Gi
+  storageClass: gp3
+  database: banking
+  user: banking
+  resources:
+    requests: { cpu: "300m", memory: "512Mi" }
+    limits:   { cpu: "1500m", memory: "3Gi" }
+
+redis:
+  enabled: true
+  image: redis:8-alpine
+  replicas: 1
+  port: 6379
+  storage: 5Gi
+  storageClass: gp3
+  resources:
+    requests: { cpu: "100m", memory: "128Mi" }
+    limits:   { cpu: "500m", memory: "512Mi" }
+
+
+kafka:
+  enabled: true
+  image: apache/kafka:3.9.0
+  replicas: 1
+  port: 9092
+  storage: 20Gi
+  storageClass: gp3
+  resources:
+    requests: { cpu: "300m", memory: "512Mi" }
+    limits:   { cpu: "1000m", memory: "2Gi" }
+
+# â”€â”€ Ingress (Traefik IngressRoute) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ingress:
+  enabled: true
+  # TODO: Replace with your real domain
+  host: "banking.example.com"
+  tls: true
+  certResolver: "letsencrypt"
+  entryPoint: "websecure"
+
+# â”€â”€ PodDisruptionBudgets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+pdb:
+  enabled: true
+
+# â”€â”€ StorageClass â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+storageClass:
+  create: true
+  name: gp3
+  isDefault: true

@@ -1,0 +1,14 @@
+syntax = "proto3";
+package banking.authz;
+option optimize_for = SPEED;
+
+service AuthzService {
+  rpc CheckPermission  (CheckPermissionRequest)  returns (CheckPermissionResponse);
+  rpc GetPermissions   (GetPermissionsRequest)   returns (GetPermissionsResponse);
+}
+
+message CheckPermissionRequest  { string user_id = 1; string role = 2; string resource = 3; string action = 4; }
+message CheckPermissionResponse { bool allowed = 1; string reason = 2; }
+
+message GetPermissionsRequest  { string role = 1; }
+message GetPermissionsResponse { repeated string permissions = 1; }

@@ -1,0 +1,219 @@
+{
+  "title": "Banking Platform — Overview",
+  "uid": "banking-overview",
+  "description": "Platform-wide view: all 11 services — RPS, error rate, p50/p95/p99 latency, alert state, service graph",
+  "tags": ["banking", "overview"],
+  "schemaVersion": 39,
+  "version": 2,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "alertlist", "title": "🚨 Active Alerts",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 4 },
+      "options": {
+        "alertInstanceLabelFilter": "",
+        "alertName": "",
+        "dashboardAlerts": false,
+        "groupBy": ["alertname", "service"],
+        "groupMode": "default",
+        "maxItems": 20,
+        "sortOrder": 1,
+        "stateFilter": { "firing": true, "pending": true, "noData": false, "normal": false, "error": true }
+      }
+    },
+    {
+      "id": 20, "type": "stat", "title": "Services Up",
+      "gridPos": { "x": 0, "y": 4, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{"color":"red","value":null},{"color":"yellow","value":8},{"color":"green","value":11}] }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "graphMode": "none", "colorMode": "background" },
+      "targets": [{ "expr": "count(up{job=\"banking\"} == 1)", "legendFormat": "" }]
+    },
+    {
+      "id": 21, "type": "stat", "title": "Total RPS",
+      "gridPos": { "x": 4, "y": 4, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null}] } } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "expr": "sum(rate(banking_http_requests_total{job=\"banking\"}[1m]))", "legendFormat": "" }]
+    },
+    {
+      "id": 22, "type": "stat", "title": "Platform p99 Latency",
+      "gridPos": { "x": 8, "y": 4, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"yellow","value":0.5},{"color":"red","value":2}] }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "expr": "max(job:banking_p99_latency:rate5m)", "legendFormat": "" }]
+    },
+    {
+      "id": 23, "type": "stat", "title": "Platform Error Rate",
+      "gridPos": { "x": 12, "y": 4, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"yellow","value":0.001},{"color":"red","value":0.01}] }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "expr": "sum(rate(banking_http_requests_total{job=\"banking\",status_code=~\"5..\"}[5m])) / sum(rate(banking_http_requests_total{job=\"banking\"}[5m]))", "legendFormat": "" }]
+    },
+    {
+      "id": 24, "type": "stat", "title": "Active Alerts",
+      "gridPos": { "x": 16, "y": 4, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"yellow","value":1},{"color":"red","value":3}] }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "expr": "count(ALERTS{alertstate=\"firing\"})", "legendFormat": "" }]
+    },
+    {
+      "id": 25, "type": "stat", "title": "Total Active Requests",
+      "gridPos": { "x": 20, "y": 4, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"yellow","value":100},{"color":"red","value":500}] }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "expr": "sum(banking_http_active_requests{job=\"banking\"})", "legendFormat": "" }]
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Request Rate — All Services",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2, "fillOpacity": 5 } } },
+      "targets": [{ "expr": "sum by (service) (rate(banking_http_requests_total{job=\"banking\"}[1m]))", "legendFormat": "{{service}}" }]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "5xx Error Rate — All Services",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit", "min": 0,
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"yellow","value":0.001},{"color":"red","value":0.01}] }
+        }
+      },
+      "targets": [{ "expr": "job:banking_http_5xx_rate:rate5m", "legendFormat": "{{service}}" }]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "p50 / p95 / p99 Latency — All Services (p99)",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "expr": "job:banking_p99_latency:rate5m", "legendFormat": "p99 {{service}}" },
+        { "expr": "job:banking_p95_latency:rate5m", "legendFormat": "p95 {{service}}" }
+      ]
+    },
+    {
+      "id": 5, "type": "table", "title": "Service Health Summary",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Up" },
+            "properties": [
+              { "id": "custom.displayMode", "value": "color-background" },
+              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{"color":"red","value":null},{"color":"green","value":1}] } },
+              { "id": "mappings", "value": [{"options":{"0":{"text":"DOWN","color":"red"},"1":{"text":"UP","color":"green"}},"type":"value"}] }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Error Rate" },
+            "properties": [
+              { "id": "unit", "value": "percentunit" },
+              { "id": "custom.displayMode", "value": "color-background" },
+              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"yellow","value":0.001},{"color":"red","value":0.01}] } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "p99 Latency" },
+            "properties": [
+              { "id": "unit", "value": "s" },
+              { "id": "custom.displayMode", "value": "color-background" },
+              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"yellow","value":0.5},{"color":"red","value":2}] } }
+            ]
+          }
+        ]
+      },
+      "options": { "footer": { "show": false }, "sortBy": [{ "displayName": "Service", "desc": false }] },
+      "targets": [
+        { "expr": "up{job=\"banking\"}", "legendFormat": "{{service_name}}", "instant": true, "format": "table" },
+        { "expr": "job:banking_http_5xx_rate:rate5m", "legendFormat": "{{service}}", "instant": true, "format": "table" },
+        { "expr": "job:banking_p99_latency:rate5m", "legendFormat": "{{service}}", "instant": true, "format": "table" }
+      ],
+      "transformations": [
+        { "id": "seriesToColumns", "options": { "byField": "service" } },
+        { "id": "organize", "options": { "renameByName": { "service_name": "Service", "Value #A": "Up", "Value #B": "Error Rate", "Value #C": "p99 Latency" } } }
+      ]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Memory (RSS) — All Services",
+      "gridPos": { "x": 0, "y": 24, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "lineWidth": 2 } } },
+      "targets": [{ "expr": "process_resident_memory_bytes{job=\"banking\"}", "legendFormat": "{{service_name}}" }]
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "CPU Usage — All Services",
+      "gridPos": { "x": 12, "y": 24, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "custom": { "lineWidth": 2 } } },
+      "targets": [{ "expr": "rate(process_cpu_seconds_total{job=\"banking\"}[1m])", "legendFormat": "{{service_name}}" }]
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "Active HTTP Requests — All Services",
+      "gridPos": { "x": 0, "y": 32, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 8 } } },
+      "targets": [{ "expr": "sum by (service) (banking_http_active_requests{job=\"banking\"})", "legendFormat": "{{service}}" }]
+    },
+    {
+      "id": 10, "type": "timeseries", "title": "MongoDB Query p95 Latency — All Services",
+      "gridPos": { "x": 12, "y": 32, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } } },
+      "targets": [{
+        "expr": "histogram_quantile(0.95, sum by (service, le) (rate(banking_db_query_duration_seconds_bucket{job=\"banking\"}[5m])))",
+        "legendFormat": "{{service}}"
+      }]
+    },
+    {
+      "id": 8, "type": "logs", "title": "Platform Logs — Errors & Warnings",
+      "gridPos": { "x": 0, "y": 40, "w": 24, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "options": { "dedupStrategy": "none", "enableLogDetails": true, "showTime": true, "sortOrder": "Descending" },
+      "targets": [{
+        "expr": "{job=\"banking-containers\"} | json | level =~ \"ERROR|WARN\" | line_format \"[{{.service}}] {{.level}} {{.message}}\"",
+        "legendFormat": ""
+      }]
+    }
+  ]
+}

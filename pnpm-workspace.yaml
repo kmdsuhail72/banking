@@ -5,5 +5,8 @@ packages:
 
 allowBuilds:
   '@nestjs/core': true
+  '@parcel/watcher': true
   argon2: true
+  protobufjs: false
   sharp: true
+  unrs-resolver: true

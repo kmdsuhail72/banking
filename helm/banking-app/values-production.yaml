@@ -1,0 +1,36 @@
+# values-production.yaml — overrides for production EKS
+# Usage: helm upgrade --install banking ./helm/banking-app -f values.yaml -f values-production.yaml
+
+global:
+  registry: "111122223333.dkr.ecr.us-east-1.amazonaws.com"  # TODO: replace
+  imageTag: "sha-replace-with-commit-sha"
+  pullPolicy: IfNotPresent
+  namespace: banking
+
+ingress:
+  host: "banking.example.com"   # TODO: replace with real domain
+  tls: true
+  certResolver: "letsencrypt"
+
+mongodb:
+  storage: 50Gi
+  resources:
+    requests: { cpu: "500m", memory: "1Gi" }
+    limits:   { cpu: "2000m", memory: "4Gi" }
+
+redis:
+  storage: 10Gi
+
+kafka:
+  storage: 50Gi
+  resources:
+    requests: { cpu: "500m", memory: "1Gi" }
+    limits:   { cpu: "2000m", memory: "4Gi" }
+
+services:
+  transaction:
+    replicas: 3
+    hpa: { minReplicas: 3, maxReplicas: 20, cpuUtilization: 60, memUtilization: 70 }
+  payment:
+    replicas: 3
+    hpa: { minReplicas: 3, maxReplicas: 15, cpuUtilization: 60, memUtilization: 70 }

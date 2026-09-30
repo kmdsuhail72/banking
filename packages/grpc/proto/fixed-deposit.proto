@@ -1,0 +1,15 @@
+﻿syntax = "proto3";
+package banking.fixed_deposit;
+option optimize_for = SPEED;
+
+service FixedDepositService {
+  rpc CreateFD   (CreateFDRequest)  returns (CreateFDResponse);
+  rpc GetFD      (GetFDRequest)     returns (GetFDResponse);
+  rpc BreakFD    (BreakFDRequest)   returns (BreakFDResponse);
+}
+message CreateFDRequest  { string user_id = 1; string account_id = 2; int64 amount_minor = 3; int32 tenure_days = 4; double interest_rate = 5; }
+message CreateFDResponse { string fd_id = 1; string status = 2; string maturity_date = 3; int64 maturity_amount_minor = 4; }
+message GetFDRequest  { string fd_id = 1; }
+message GetFDResponse { string id = 1; string user_id = 2; int64 principal_minor = 3; double interest_rate = 4; string maturity_date = 5; string status = 6; }
+message BreakFDRequest  { string fd_id = 1; string reason = 2; }
+message BreakFDResponse { bool success = 1; int64 payout_minor = 2; double penalty_rate = 3; }

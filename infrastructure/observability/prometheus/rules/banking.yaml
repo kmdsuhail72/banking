@@ -1,0 +1,275 @@
+groups:
+  # ══════════════════════════════════════════════════════════════════════════════
+  # Recording Rules — pre-compute expensive aggregations for fast dashboard loads
+  # ══════════════════════════════════════════════════════════════════════════════
+  - name: banking.recording
+    interval: 30s
+    rules:
+      - record: job:banking_http_requests:rate1m
+        expr: sum by (service) (rate(banking_http_requests_total{job="banking"}[1m]))
+
+      - record: job:banking_http_5xx_rate:rate5m
+        expr: |
+          sum by (service) (rate(banking_http_requests_total{job="banking", status_code=~"5.."}[5m]))
+          /
+          sum by (service) (rate(banking_http_requests_total{job="banking"}[5m]))
+
+      - record: job:banking_p99_latency:rate5m
+        expr: |
+          histogram_quantile(0.99,
+            sum by (service, le) (rate(banking_http_request_duration_seconds_bucket{job="banking"}[5m]))
+          )
+
+      - record: job:banking_p95_latency:rate5m
+        expr: |
+          histogram_quantile(0.95,
+            sum by (service, le) (rate(banking_http_request_duration_seconds_bucket{job="banking"}[5m]))
+          )
+
+      - record: job:banking_p50_latency:rate5m
+        expr: |
+          histogram_quantile(0.50,
+            sum by (service, le) (rate(banking_http_request_duration_seconds_bucket{job="banking"}[5m]))
+          )
+
+  # ══════════════════════════════════════════════════════════════════════════════
+  # Service Health
+  # ══════════════════════════════════════════════════════════════════════════════
+  - name: banking.service-health
+    interval: 30s
+    rules:
+      - alert: BankingServiceDown
+        expr: up{job="banking"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Banking service {{ $labels.service_name }} is down"
+          description: "Service {{ $labels.service_name }} ({{ $labels.instance }}) has been unreachable for more than 1 minute."
+          runbook_url: "https://wiki.banking.internal/runbooks/service-down"
+
+      - alert: BankingServiceCrashLoop
+        expr: |
+          increase(process_start_time_seconds{job="banking"}[5m]) > 2
+        for: 0m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Service {{ $labels.service_name }} is crash-looping"
+          description: "Service {{ $labels.service_name }} has restarted more than 2 times in the last 5 minutes."
+          runbook_url: "https://wiki.banking.internal/runbooks/crash-loop"
+
+      - alert: BankingPodNotReady
+        expr: |
+          kube_pod_status_ready{condition="true", namespace="banking"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Pod {{ $labels.pod }} is not ready"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been not-ready for 5 minutes."
+
+      - alert: BankingPodOOMKilled
+        expr: |
+          increase(kube_pod_container_status_restarts_total{namespace="banking", reason="OOMKilled"}[15m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Container {{ $labels.container }} in pod {{ $labels.pod }} was OOM-killed"
+          description: "Container was killed by the OOM killer. Increase memory limits or fix a memory leak."
+
+  # ══════════════════════════════════════════════════════════════════════════════
+  # HTTP Errors
+  # ══════════════════════════════════════════════════════════════════════════════
+  - name: banking.http-errors
+    interval: 30s
+    rules:
+      - alert: BankingHighErrorRate
+        expr: job:banking_http_5xx_rate:rate5m > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "High 5xx error rate on {{ $labels.service }}"
+          description: "Service {{ $labels.service }} has a 5xx error rate of {{ $value | humanizePercentage }} over the last 5 minutes. Threshold: 1%."
+          runbook_url: "https://wiki.banking.internal/runbooks/high-error-rate"
+
+      - alert: BankingElevatedErrorRate
+        expr: job:banking_http_5xx_rate:rate5m > 0.001
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Elevated 5xx error rate on {{ $labels.service }}"
+          description: "Service {{ $labels.service }} has a 5xx error rate of {{ $value | humanizePercentage }}. Threshold: 0.1%."
+
+      # Alert if a service stops receiving any traffic at all (sentinel for broken routing)
+      - alert: BankingServiceNoTraffic
+        expr: |
+          sum by (service) (rate(banking_http_requests_total{job="banking"}[10m])) == 0
+          and on(service) up{job="banking"} == 1
+        for: 15m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "No traffic to {{ $labels.service }} for 15 minutes"
+          description: "Service {{ $labels.service }} is up but has received zero HTTP requests in 15 minutes. Check routing or load balancer."
+
+  # ══════════════════════════════════════════════════════════════════════════════
+  # Latency
+  # ══════════════════════════════════════════════════════════════════════════════
+  - name: banking.latency
+    interval: 30s
+    rules:
+      - alert: BankingHighP99Latency
+        expr: job:banking_p99_latency:rate5m > 2
+        for: 5m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "p99 latency spike on {{ $labels.service }}"
+          description: "Service {{ $labels.service }} p99 latency is {{ $value | humanizeDuration }} (threshold: 2s)."
+          runbook_url: "https://wiki.banking.internal/runbooks/latency-spike"
+
+      - alert: BankingHighP95Latency
+        expr: job:banking_p95_latency:rate5m > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Elevated p95 latency on {{ $labels.service }}"
+          description: "Service {{ $labels.service }} p95 latency is {{ $value | humanizeDuration }} (threshold: 1s)."
+
+      - alert: BankingHighP50Latency
+        expr: job:banking_p50_latency:rate5m > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Median latency degraded on {{ $labels.service }}"
+          description: "Service {{ $labels.service }} p50 latency is {{ $value | humanizeDuration }} — most users are seeing slow responses."
+
+  # ══════════════════════════════════════════════════════════════════════════════
+  # Resource Saturation
+  # ══════════════════════════════════════════════════════════════════════════════
+  - name: banking.resources
+    interval: 60s
+    rules:
+      - alert: BankingHighMemoryUsage
+        expr: |
+          process_resident_memory_bytes{job="banking"} > 536870912
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High memory usage on {{ $labels.service_name }}"
+          description: "Service {{ $labels.service_name }} is using {{ $value | humanize1024 }}B RSS (threshold: 512 MiB)."
+
+      - alert: BankingCriticalMemoryUsage
+        expr: |
+          process_resident_memory_bytes{job="banking"} > 1073741824
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Critical memory usage on {{ $labels.service_name }}"
+          description: "Service {{ $labels.service_name }} is using {{ $value | humanize1024 }}B RSS (threshold: 1 GiB). OOM kill imminent."
+
+      - alert: BankingHighCPUUsage
+        expr: |
+          rate(process_cpu_seconds_total{job="banking"}[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High CPU usage on {{ $labels.service_name }}"
+          description: "Service {{ $labels.service_name }} is consuming {{ $value | humanizePercentage }} CPU."
+
+      - alert: BankingHighActiveRequests
+        expr: |
+          banking_http_active_requests{job="banking"} > 200
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High in-flight request count on {{ $labels.service }}"
+          description: "Service {{ $labels.service }} has {{ $value }} active HTTP requests. Possible overload or slow downstream."
+
+      - alert: BankingHighDBQueryLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (service, le) (rate(banking_db_query_duration_seconds_bucket{job="banking"}[5m]))
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Slow MongoDB queries on {{ $labels.service }}"
+          description: "p95 MongoDB query latency for {{ $labels.service }} is {{ $value | humanizeDuration }} (threshold: 500ms). Check indexes."
+
+  # ══════════════════════════════════════════════════════════════════════════════
+  # gRPC
+  # ══════════════════════════════════════════════════════════════════════════════
+  - name: banking.grpc
+    interval: 30s
+    rules:
+      - alert: BankingHighGrpcErrorRate
+        expr: |
+          (
+            sum by (service) (rate(banking_grpc_request_duration_seconds_count{job="banking", status_code!="0"}[5m]))
+            /
+            sum by (service) (rate(banking_grpc_request_duration_seconds_count{job="banking"}[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High gRPC error rate on {{ $labels.service }}"
+          description: "Service {{ $labels.service }} has a gRPC non-OK rate of {{ $value | humanizePercentage }} (threshold: 5%)."
+
+  # ══════════════════════════════════════════════════════════════════════════════
+  # Kubernetes HPA / Scaling
+  # ══════════════════════════════════════════════════════════════════════════════
+  - name: banking.kubernetes
+    interval: 60s
+    rules:
+      - alert: BankingHPAMaxReplicas
+        expr: |
+          kube_horizontalpodautoscaler_status_current_replicas{namespace="banking"}
+          >=
+          kube_horizontalpodautoscaler_spec_max_replicas{namespace="banking"}
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "HPA {{ $labels.horizontalpodautoscaler }} is at max replicas"
+          description: "HPA {{ $labels.horizontalpodautoscaler }} has been at its maximum replica count for 5 minutes. Consider raising the limit."
+
+      - alert: BankingHPAUnableToScale
+        expr: |
+          kube_horizontalpodautoscaler_status_condition{condition="ScalingActive", status="false", namespace="banking"} == 1
+        for: 10m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "HPA {{ $labels.horizontalpodautoscaler }} cannot scale"
+          description: "HPA {{ $labels.horizontalpodautoscaler }} has been unable to scale for 10 minutes. Check metrics-server and resource metrics."

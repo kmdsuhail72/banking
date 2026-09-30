@@ -1,0 +1,21 @@
+syntax = "proto3";
+package banking.customer;
+option optimize_for = SPEED;
+
+service CustomerService {
+  rpc GetCustomer      (GetCustomerRequest)      returns (GetCustomerResponse);
+  rpc UpdateKycStatus  (UpdateKycStatusRequest)  returns (UpdateKycStatusResponse);
+  rpc GetRiskScore     (GetRiskScoreRequest)     returns (GetRiskScoreResponse);
+}
+
+message GetCustomerRequest  { string user_id = 1; }
+message GetCustomerResponse {
+  string id = 1; string user_id = 2; string first_name = 3; string last_name = 4;
+  string email = 5; string phone = 6; string kyc_status = 7; double risk_score = 8;
+}
+
+message UpdateKycStatusRequest  { string user_id = 1; string kyc_status = 2; }
+message UpdateKycStatusResponse { bool success = 1; }
+
+message GetRiskScoreRequest  { string user_id = 1; }
+message GetRiskScoreResponse { double risk_score = 1; string risk_level = 2; }

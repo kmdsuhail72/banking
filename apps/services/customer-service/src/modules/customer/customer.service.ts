@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Customer, CustomerDocument } from '../../schemas/customer.schema';
+import { Customer, CustomerDocument } from './schemas/customer.schema';
 import { appConfig } from '@banking/config';
 import { createLogger } from '@banking/logger';
 import { KafkaEventBus } from '@banking/kafka';
@@ -41,50 +41,65 @@ export class CustomerService {
       phone: dto.phone,
       dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
       address: dto.address,
-      kycStatus: KycStatus.PENDING,
+      kycStatus: dto.kycStatus ?? KycStatus.PENDING,
       riskScore: 30, // Default low baseline risk
     });
 
     this.logger.info(`Created customer profile for userId ${dto.userId} (customerId: ${customer._id})`);
 
     // Publish customer.created event
-    await this.eventBus.publish<ICustomerCreatedPayload>(KafkaTopics.CUSTOMER_CREATED, {
-      eventId: `cust_${Date.now()}_${customer._id}`,
-      eventType: KafkaTopics.CUSTOMER_CREATED,
-      sourceService: 'customer-service',
-      timestamp: new Date().toISOString(),
-      correlationId: dto.userId,
-      payload: {
-        customerId: customer._id.toString(),
-        userId: dto.userId,
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        email: customer.email,
-        kycStatus: customer.kycStatus,
-      },
-    });
+    try {
+      await this.eventBus.publish<ICustomerCreatedPayload>(KafkaTopics.CUSTOMER_CREATED, {
+        eventId: `cust_${Date.now()}_${customer._id}`,
+        eventType: KafkaTopics.CUSTOMER_CREATED,
+        sourceService: 'customer-service',
+        timestamp: new Date().toISOString(),
+        correlationId: dto.userId,
+        payload: {
+          customerId: customer._id.toString(),
+          userId: dto.userId,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          email: customer.email,
+          kycStatus: customer.kycStatus,
+        },
+      });
+    } catch (err: any) {
+      this.logger.warn(`Could not publish customer.created event: ${err.message}`);
+    }
 
     return customer;
   }
 
-  async getByUserId(userId: string): Promise<CustomerDocument> {
-    let customer = await this.customerModel.findOne({ userId });
+  async getByUserId(userId: string): Promise<CustomerDocument | null> {
+    return this.customerModel.findOne({ userId });
+  }
+
+  /**
+   * Alias used by controller for GET /customers/me
+   * Returns existing customer profile or throws if not found
+   */
+  async getMe(userId: string): Promise<CustomerDocument> {
+    const customer = await this.customerModel.findOne({ userId });
     if (!customer) {
-      // Auto-fallback default customer profile if not yet created
-      customer = await this.customerModel.create({
-        userId,
-        firstName: 'Valued',
-        lastName: 'Member',
-        email: `user_${userId.slice(-6)}@novabank.com`,
-        kycStatus: KycStatus.PENDING,
-        riskScore: 20,
-      });
+      throw new NotFoundException('Customer profile not found');
+    }
+    return customer;
+  }
+
+  /**
+   * Alias used by controller for GET /customers/:id
+   */
+  async getCustomerById(id: string): Promise<CustomerDocument> {
+    const customer = await this.customerModel.findById(id);
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
     }
     return customer;
   }
 
   async updateProfile(userId: string, dto: UpdateCustomerDto): Promise<CustomerDocument> {
-    const customer = await this.getByUserId(userId);
+    const customer = await this.getMe(userId);
 
     if (dto.firstName) customer.firstName = dto.firstName;
     if (dto.lastName) customer.lastName = dto.lastName;
@@ -102,8 +117,33 @@ export class CustomerService {
     return customer;
   }
 
+  /**
+   * Alias used by controller for PATCH /customers/:id
+   */
+  async updateCustomer(id: string, dto: UpdateCustomerDto): Promise<CustomerDocument> {
+    const customer = await this.customerModel.findById(id);
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    if (dto.firstName) customer.firstName = dto.firstName;
+    if (dto.lastName) customer.lastName = dto.lastName;
+    if (dto.phone) customer.phone = dto.phone;
+    if (dto.dateOfBirth) customer.dateOfBirth = new Date(dto.dateOfBirth);
+    if (dto.address) {
+      customer.address = {
+        ...customer.address,
+        ...dto.address,
+      };
+    }
+
+    await customer.save();
+    this.logger.info(`Updated customer ${id}`);
+    return customer;
+  }
+
   async submitKyc(userId: string, dto: SubmitKycDto): Promise<CustomerDocument> {
-    const customer = await this.getByUserId(userId);
+    const customer = await this.getMe(userId);
 
     customer.kycDocumentType = dto.documentType;
     customer.kycDocumentNumber = dto.documentNumber;

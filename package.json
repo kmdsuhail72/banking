@@ -5,7 +5,7 @@
   "description": "Enterprise Cloud-Native Banking Microservices Platform",
   "packageManager": "pnpm@11.24.0",
   "scripts": {
-    "dev": "pnpm --parallel --filter './apps/*' dev",
+    "dev": "pnpm --parallel -r dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",

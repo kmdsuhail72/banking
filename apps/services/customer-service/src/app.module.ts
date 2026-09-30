@@ -1,16 +1,15 @@
-import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+﻿import { Module } from '@nestjs/common';
+import { DatabaseModule } from '@banking/database';
 import { HealthModule } from './health/health.module';
-import { CustomerModule } from './modules/customer/customer.module';
-import { appConfig } from '@banking/config';
+import { CustOutboxEntity } from './entities/cust-outbox.entity';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(appConfig.mongodb.uri, {
-      serverSelectionTimeoutMS: 5000,
+    DatabaseModule.forService({
+      entities: [CustOutboxEntity],
     }),
     HealthModule,
-    CustomerModule,
+    // TODO: import domain module here
   ],
 })
 export class AppModule {}

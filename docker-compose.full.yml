@@ -1,0 +1,298 @@
+# ─── Required: read ports from config ────────────────────────────────────────
+x-otel-env: &otel-env
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  NODE_ENV: development
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  depends_on:
+    otel-collector:
+      condition: service_healthy
+    loki:
+      condition: service_started
+
+services:
+  # ════════════════════════════════════════════════════════════════════════════
+  # OBSERVABILITY STACK
+  # ════════════════════════════════════════════════════════════════════════════
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.123.0
+    command: [--config=/etc/otelcol/config.yaml]
+    volumes:
+      - ./infrastructure/observability/collector.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
+      - "127.0.0.1:13133:13133"
+      - "127.0.0.1:8889:8889"
+    depends_on:
+      tempo:
+        condition: service_started
+      loki:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:13133"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.7.2
+    command: [-config.file=/etc/tempo/tempo.yaml]
+    volumes:
+      - ./infrastructure/observability/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "127.0.0.1:3200:3200"
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+      - --enable-feature=native-histograms
+    volumes:
+      - ./infrastructure/observability/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - ./infrastructure/observability/prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    command: [--config.file=/etc/alertmanager/alertmanager.yaml, --storage.path=/alertmanager]
+    volumes:
+      - ./infrastructure/observability/alertmanager/alertmanager.yaml:/etc/alertmanager/alertmanager.yaml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "127.0.0.1:9093:9093"
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.4.3
+    command: [-config.file=/etc/loki/loki.yaml]
+    volumes:
+      - ./infrastructure/observability/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki_data:/loki
+    ports:
+      - "127.0.0.1:3100:3100"
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:3.4.3
+    command: [-config.file=/etc/promtail/promtail.yaml]
+    volumes:
+      - ./infrastructure/observability/promtail/promtail.yaml:/etc/promtail/promtail.yaml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      loki:
+        condition: service_started
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_FEATURE_TOGGLES_ENABLE: "traceqlEditor metricsSummary"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - ./infrastructure/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3001:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+      - alertmanager
+    restart: unless-stopped
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # BANKING MICROSERVICES
+  # ════════════════════════════════════════════════════════════════════════════
+
+  auth-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: apps/services/auth-service/Dockerfile
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: auth-service
+      OTEL_RESOURCE_ATTRIBUTES: "service.version=1.0.0,deployment.environment=development"
+      PORT: "4001"
+    ports:
+      - "127.0.0.1:4001:4001"
+    labels:
+      com.docker.compose.project: banking
+
+  customer-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: apps/services/customer-service/Dockerfile
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: customer-service
+      OTEL_RESOURCE_ATTRIBUTES: "service.version=1.0.0,deployment.environment=development"
+      PORT: "4002"
+    ports:
+      - "127.0.0.1:4002:4002"
+    labels:
+      com.docker.compose.project: banking
+
+  account-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: apps/services/account-service/Dockerfile
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: account-service
+      OTEL_RESOURCE_ATTRIBUTES: "service.version=1.0.0,deployment.environment=development"
+      PORT: "4003"
+    ports:
+      - "127.0.0.1:4003:4003"
+    labels:
+      com.docker.compose.project: banking
+
+  transaction-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: apps/services/transaction-service/Dockerfile
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: transaction-service
+      OTEL_RESOURCE_ATTRIBUTES: "service.version=1.0.0,deployment.environment=development"
+      PORT: "4004"
+    ports:
+      - "127.0.0.1:4004:4004"
+    labels:
+      com.docker.compose.project: banking
+
+  payment-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: apps/services/payment-service/Dockerfile
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: payment-service
+      OTEL_RESOURCE_ATTRIBUTES: "service.version=1.0.0,deployment.environment=development"
+      PORT: "4005"
+    ports:
+      - "127.0.0.1:4005:4005"
+    labels:
+      com.docker.compose.project: banking
+
+  wallet-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: apps/services/wallet-service/Dockerfile
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: wallet-service
+      OTEL_RESOURCE_ATTRIBUTES: "service.version=1.0.0,deployment.environment=development"
+      PORT: "4006"
+    ports:
+      - "127.0.0.1:4006:4006"
+    labels:
+      com.docker.compose.project: banking
+
+  ledger-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: apps/services/ledger-service/Dockerfile
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: ledger-service
+      OTEL_RESOURCE_ATTRIBUTES: "service.version=1.0.0,deployment.environment=development"
+      PORT: "4007"
+    ports:
+      - "127.0.0.1:4007:4007"
+    labels:
+      com.docker.compose.project: banking
+
+  beneficiary-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: apps/services/beneficiary-service/Dockerfile
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: beneficiary-service
+      OTEL_RESOURCE_ATTRIBUTES: "service.version=1.0.0,deployment.environment=development"
+      PORT: "4008"
+    ports:
+      - "127.0.0.1:4008:4008"
+    labels:
+      com.docker.compose.project: banking
+
+  kyc-risk-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: apps/services/kyc-risk-service/Dockerfile
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: kyc-risk-service
+      OTEL_RESOURCE_ATTRIBUTES: "service.version=1.0.0,deployment.environment=development"
+      PORT: "4009"
+    ports:
+      - "127.0.0.1:4009:4009"
+    labels:
+      com.docker.compose.project: banking
+
+  notification-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: apps/services/notification-service/Dockerfile
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: notification-service
+      OTEL_RESOURCE_ATTRIBUTES: "service.version=1.0.0,deployment.environment=development"
+      PORT: "4010"
+    ports:
+      - "127.0.0.1:4010:4010"
+    labels:
+      com.docker.compose.project: banking
+
+  reporting-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: apps/services/reporting-service/Dockerfile
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: reporting-service
+      OTEL_RESOURCE_ATTRIBUTES: "service.version=1.0.0,deployment.environment=development"
+      PORT: "4011"
+    ports:
+      - "127.0.0.1:4011:4011"
+    labels:
+      com.docker.compose.project: banking
+
+volumes:
+  prometheus_data:
+  alertmanager_data:
+  loki_data:
+  tempo_data:
+  grafana_data:

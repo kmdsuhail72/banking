@@ -1,35 +1,172 @@
-name: Cloud Banking Platform CI
+﻿# =============================================================================
+# Banking Platform — Lightweight CI (Pull Requests)
+#
+# This workflow runs ONLY on pull_requests and provides fast feedback.
+# It deliberately does NOT build Docker images or deploy anything.
+#
+# Full CI/CD (build, scan, push, deploy) is handled by ci-cd.yml
+# which triggers on push to main/develop and on semver tags.
+# =============================================================================
+
+name: "CI — PR Validation"
 
 on:
-  push:
-    branches: [main, master, develop]
   pull_request:
-    branches: [main, master, develop]
+    branches: [main, develop]
+
+concurrency:
+  group: ci-pr-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "11.24.0"
 
 jobs:
-  build-and-test:
+
+  # ── 1. Code Quality ──────────────────────────────────────────────────────────
+  quality:
+    name: "Quality: format + lint + typecheck"
     runs-on: ubuntu-latest
-
+    timeout-minutes: 12
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
+      - uses: actions/checkout@v4
         with:
-          version: 11
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
         with:
-          node-version: 22
-          cache: 'pnpm'
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Prettier — format check
+        run: pnpm exec prettier --check "**/*.{ts,tsx,js,json,md,yml,yaml}"
+      - name: ESLint — lint all packages
+        run: pnpm -r --if-present run lint
+      - name: TypeScript — type-check all packages
+        run: pnpm -r --if-present run typecheck
 
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile=false
+  # ── 2. Unit + Integration Tests ──────────────────────────────────────────────
+  test:
+    name: "Test: unit + integration"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB:       banking_test
+          POSTGRES_USER:     banking
+          POSTGRES_PASSWORD: test-password-ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:8-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-retries 5
+      kafka:
+        image: apache/kafka:3.9.0
+        ports: ["9092:9092"]
+        env:
+          KAFKA_PROCESS_ROLES:                    broker,controller
+          KAFKA_NODE_ID:                          1
+          KAFKA_CONTROLLER_QUORUM_VOTERS:         "1@localhost:9093"
+          KAFKA_LISTENERS:                        PLAINTEXT://:9092,CONTROLLER://:9093
+          KAFKA_ADVERTISED_LISTENERS:             PLAINTEXT://localhost:9092
+          KAFKA_CONTROLLER_LISTENER_NAMES:        CONTROLLER
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP:   CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_AUTO_CREATE_TOPICS_ENABLE:        "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Run all test suites
+        env:
+          DB_HOST:            localhost
+          DB_PORT:            5432
+          DB_NAME:            banking_test
+          DB_USER:            banking
+          DB_PASS:            test-password-ci
+          REDIS_HOST:         localhost
+          REDIS_PORT:         6379
+          KAFKA_BROKERS:      localhost:9092
+          NODE_ENV:           test
+          JWT_SECRET:         test-jwt-secret-for-ci-only
+          JWT_REFRESH_SECRET: test-refresh-secret-for-ci-only
+        run: pnpm -r --if-present run test -- --passWithNoTests --forceExit --coverage
+      - name: Upload test coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-test-coverage-${{ github.sha }}
+          path: "**/coverage/"
+          retention-days: 7
 
-      - name: Build Packages & Microservices
-        run: pnpm build
+  # ── 3. Dependency Review ─────────────────────────────────────────────────────
+  dependency-review:
+    name: "Security: dependency review"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+          deny-licenses: LGPL-2.0, GPL-2.0, GPL-3.0
 
-      - name: Lint Check
-        run: pnpm lint
+  # ── 4. Helm Chart Lint ───────────────────────────────────────────────────────
+  helm-lint:
+    name: "Helm: lint + dry-run"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.17.0
+      - run: helm lint helm/banking-app
+      - run: helm lint helm/banking-app -f helm/banking-app/values.yaml -f helm/banking-app/values-production.yaml
+      - run: helm lint helm/banking-app -f helm/banking-app/values.yaml -f helm/banking-app/values-staging.yaml
+      - name: Dry-run template render (object count)
+        run: |
+          helm template banking helm/banking-app \
+            -f helm/banking-app/values.yaml \
+            -f helm/banking-app/values-production.yaml \
+            | grep "^kind:" | sort | uniq -c | sort -rn
+
+  # ── Gate: branch protection required check alias ─────────────────────────────
+  ci-gate:
+    name: "ci / gate — all checks passed"
+    runs-on: ubuntu-latest
+    needs: [quality, test, helm-lint]
+    if: always()
+    steps:
+      - name: Evaluate gate
+        run: |
+          Q="${{ needs.quality.result }}"
+          T="${{ needs.test.result }}"
+          H="${{ needs.helm-lint.result }}"
+          echo "quality=${Q}  test=${T}  helm-lint=${H}"
+          if [[ "$Q" == "failure" || "$T" == "failure" || "$H" == "failure" ]]; then
+            echo "One or more required checks FAILED." && exit 1
+          fi
+          echo "All required checks PASSED"

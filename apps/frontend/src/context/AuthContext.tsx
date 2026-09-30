@@ -1,25 +1,37 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api, setAccessToken, getAccessToken } from '@/lib/api';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { api, setAccessToken, getAccessToken, refreshAccessToken } from '@/lib/api';
 import {
   AuthUserResponse,
   ICustomer,
+  IAccount,
+  ITransaction,
+  AccountType,
   RegisterDto,
   LoginDto,
   UpdateCustomerDto,
+  CreateAccountDto,
 } from '@banking/shared-types';
 
 interface AuthContextType {
   user: AuthUserResponse | null;
   customer: ICustomer | null;
+  accounts: IAccount[];
+  transactions: ITransaction[];
+  totalBalanceMinor: number;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (dto: LoginDto) => Promise<void>;
   register: (dto: RegisterDto) => Promise<any>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  refreshAccounts: () => Promise<IAccount[]>;
+  refreshTransactions: () => Promise<ITransaction[]>;
+  createAccount: (dto: CreateAccountDto) => Promise<IAccount>;
   updateCustomerProfile: (dto: UpdateCustomerDto) => Promise<ICustomer>;
+  isDemoMode: boolean;
+  enterDemoMode: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,14 +39,42 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUserResponse | null>(null);
   const [customer, setCustomer] = useState<ICustomer | null>(null);
+  const [accounts, setAccounts] = useState<IAccount[]>([]);
+  const [transactions, setTransactions] = useState<ITransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProfile = async () => {
+  const fetchAccounts = useCallback(async (): Promise<IAccount[]> => {
+    try {
+      const res = await api<{ accounts: IAccount[] }>('/api/v1/accounts');
+      const list = res.accounts || [];
+      setAccounts(list);
+      return list;
+    } catch {
+      setAccounts([]);
+      return [];
+    }
+  }, []);
+
+  const fetchTransactions = useCallback(async (): Promise<ITransaction[]> => {
+    try {
+      const res = await api<{ data: ITransaction[] }>('/api/v1/transactions?limit=10');
+      const list = res.data || [];
+      setTransactions(list);
+      return list;
+    } catch {
+      setTransactions([]);
+      return [];
+    }
+  }, []);
+
+  const fetchProfile = useCallback(async () => {
     try {
       const token = getAccessToken();
       if (!token) {
         setUser(null);
         setCustomer(null);
+        setAccounts([]);
+        setTransactions([]);
         setIsLoading(false);
         return;
       }
@@ -47,22 +87,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const customerData = await api<ICustomer>('/api/v1/customers/me');
         setCustomer(customerData);
-      } catch (custErr) {
-        // Customer profile might be initializing
+      } catch {
         setCustomer(null);
       }
-    } catch (err) {
+
+      // Fetch accounts and transactions
+      await Promise.allSettled([fetchAccounts(), fetchTransactions()]);
+    } catch {
       setUser(null);
       setCustomer(null);
+      setAccounts([]);
+      setTransactions([]);
       setAccessToken(null);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchAccounts, fetchTransactions]);
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    void (async () => {
+      try { if (!getAccessToken()) await refreshAccessToken(); } catch { /* No active session. */ }
+      await fetchProfile();
+    })();
+    const expired = () => {
+      setUser(null);
+      setCustomer(null);
+      setAccounts([]);
+      setTransactions([]);
+      if (window.location.pathname.startsWith('/dashboard') || window.location.pathname === '/profile') {
+        window.location.assign(`/auth/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      }
+    };
+    window.addEventListener('auth:expired', expired);
+    return () => window.removeEventListener('auth:expired', expired);
+  }, [fetchProfile]);
 
   const login = async (dto: LoginDto) => {
     setIsLoading(true);
@@ -85,6 +143,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {
         setCustomer(null);
       }
+
+      await Promise.allSettled([fetchAccounts(), fetchTransactions()]);
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +166,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAccessToken(null);
       setUser(null);
       setCustomer(null);
+      setAccounts([]);
+      setTransactions([]);
     }
+  };
+
+  const createAccount = async (dto: CreateAccountDto): Promise<IAccount> => {
+    const newAccount = await api<IAccount>('/api/v1/accounts', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+    await fetchAccounts();
+    return newAccount;
   };
 
   const updateCustomerProfile = async (dto: UpdateCustomerDto): Promise<ICustomer> => {
@@ -122,16 +193,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return updated;
   };
 
+  const totalBalanceMinor = accounts
+    .filter((a) => a.status === 'ACTIVE')
+    .reduce((sum, a) => sum + (a.balanceMinor || 0), 0);
+
+  const isDemoMode = typeof window !== 'undefined' && getAccessToken() === '__demo__';
+
+  const enterDemoMode = () => {
+    setAccessToken('__demo__');
+    setIsLoading(true);
+    fetchProfile();
+  };
+
   const value: AuthContextType = {
     user,
     customer,
+    accounts,
+    transactions,
+    totalBalanceMinor,
     isAuthenticated: !!user,
     isLoading,
     login,
     register,
     logout,
     refreshProfile: fetchProfile,
+    refreshAccounts: fetchAccounts,
+    refreshTransactions: fetchTransactions,
+    createAccount,
     updateCustomerProfile,
+    isDemoMode,
+    enterDemoMode,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

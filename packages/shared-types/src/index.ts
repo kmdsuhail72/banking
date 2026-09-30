@@ -14,36 +14,27 @@ export enum UserStatus {
 
 export enum AccountType {
   SAVINGS = 'SAVINGS',
-  CHECKING = 'CHECKING',
-  WALLET = 'WALLET',
-  BUSINESS = 'BUSINESS',
-  LOAN = 'LOAN',
+  CURRENT = 'CURRENT',
+  SALARY = 'SALARY',
 }
 
 export enum AccountStatus {
   ACTIVE = 'ACTIVE',
-  FROZEN = 'FROZEN',
-  DORMANT = 'DORMANT',
+  BLOCKED = 'BLOCKED',
   CLOSED = 'CLOSED',
+  PENDING = 'PENDING',
 }
 
 export enum TransactionType {
   DEPOSIT = 'DEPOSIT',
   WITHDRAWAL = 'WITHDRAWAL',
-  TRANSFER_INTERNAL = 'TRANSFER_INTERNAL',
-  TRANSFER_EXTERNAL = 'TRANSFER_EXTERNAL',
-  PAYMENT = 'PAYMENT',
-  FEE = 'FEE',
-  REVERSAL = 'REVERSAL',
+  TRANSFER = 'TRANSFER',
 }
 
 export enum TransactionStatus {
   PENDING = 'PENDING',
-  PROCESSING = 'PROCESSING',
   COMPLETED = 'COMPLETED',
   FAILED = 'FAILED',
-  REVERSED = 'REVERSED',
-  FLAGGED_FOR_REVIEW = 'FLAGGED_FOR_REVIEW',
 }
 
 export enum KycStatus {
@@ -66,9 +57,20 @@ export enum KafkaTopics {
   USER_REGISTERED = 'user.registered',
   CUSTOMER_CREATED = 'customer.created',
   ACCOUNT_CREATED = 'account.created',
-  TRANSACTION_INITIATED = 'transaction.initiated',
+  ACCOUNT_CLOSED = 'account.closed',
+  MONEY_DEPOSITED = 'money.deposited',
+  MONEY_WITHDRAWN = 'money.withdrawn',
+  MONEY_TRANSFERRED = 'money.transferred',
   TRANSACTION_COMPLETED = 'transaction.completed',
-  NOTIFICATION_REQUESTED = 'notification.requested',
+  TRANSACTION_FAILED = 'transaction.failed',
+  BENEFICIARY_ADDED = 'beneficiary.added',
+  BENEFICIARY_REMOVED = 'beneficiary.removed',
+  WALLET_CREDITED = 'wallet.credited',
+  WALLET_DEBITED = 'wallet.debited',
+  PAYMENT_INITIATED = 'payment.initiated',
+  PAYMENT_COMPLETED = 'payment.completed',
+  PAYMENT_FAILED = 'payment.failed',
+  NOTIFICATION_CREATED = 'notification.created',
 }
 
 // Domain Interfaces
@@ -108,30 +110,31 @@ export interface ICustomer {
 
 export interface IAccount {
   id: string;
-  customerId: string;
   accountNumber: string;
-  routingNumber?: string;
-  currency: string;
+  userId: string;
   type: AccountType;
+  currency: string;
+  balanceMinor: number;
+  availableBalanceMinor: number;
   status: AccountStatus;
-  balance: number;
-  availableBalance: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface ITransaction {
   id: string;
-  referenceId: string;
-  sourceAccountId: string;
-  destinationAccountId?: string;
-  amount: number;
-  currency: string;
+  transactionId: string;
+  userId: string;
+  accountId: string;
   type: TransactionType;
+  amountMinor: number;
+  currency: string;
+  destinationAccountId?: string;
+  description?: string;
   status: TransactionStatus;
-  description: string;
-  metadata?: Record<string, any>;
+  idempotencyKey: string;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ILedgerEntry {
@@ -248,6 +251,7 @@ export interface CreateCustomerDto {
   phone?: string;
   dateOfBirth?: string;
   address?: ICustomerAddress;
+  kycStatus?: KycStatus;
 }
 
 export interface UpdateCustomerDto {
@@ -280,3 +284,287 @@ export interface ICustomerCreatedPayload {
   email: string;
   kycStatus: KycStatus;
 }
+
+// Phase 3 DTOs & Payloads
+export interface CreateAccountDto {
+  type: AccountType;
+  currency?: string;
+}
+
+export interface UpdateAccountStatusDto {
+  status: AccountStatus;
+}
+
+export interface MutateBalanceDto {
+  accountId: string;
+  amountMinor: number;
+  operation: 'CREDIT' | 'DEBIT';
+  description?: string;
+}
+
+export interface AccountBalanceResponse {
+  accountNumber: string;
+  currency: string;
+  balanceMinor: number;
+  availableBalanceMinor: number;
+  status: AccountStatus;
+}
+
+export interface DepositDto {
+  accountId: string;
+  amountMinor: number;
+  description?: string;
+}
+
+export interface WithdrawDto {
+  accountId: string;
+  amountMinor: number;
+  description?: string;
+}
+
+export interface TransferDto {
+  sourceAccountId: string;
+  destinationAccountId: string;
+  amountMinor: number;
+  description?: string;
+}
+
+export interface QueryTransactionsDto {
+  page?: number;
+  limit?: number;
+  type?: TransactionType;
+  status?: TransactionStatus;
+  accountId?: string;
+  from?: string;
+  to?: string;
+}
+
+export interface TransactionListResponse {
+  data: ITransaction[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
+export interface IAccountCreatedPayload {
+  accountId: string;
+  accountNumber: string;
+  userId: string;
+  type: AccountType;
+  currency: string;
+  createdAt: string;
+}
+
+export interface IMoneyDepositedPayload {
+  transactionId: string;
+  accountId: string;
+  accountNumber?: string;
+  userId: string;
+  amountMinor: number;
+  currency: string;
+  occurredAt: string;
+}
+
+export interface IMoneyWithdrawnPayload {
+  transactionId: string;
+  accountId: string;
+  accountNumber?: string;
+  userId: string;
+  amountMinor: number;
+  currency: string;
+  occurredAt: string;
+}
+
+export interface IMoneyTransferredPayload {
+  transactionId: string;
+  sourceAccountId: string;
+  sourceAccountNumber?: string;
+  destinationAccountId: string;
+  destinationAccountNumber?: string;
+  userId: string;
+  amountMinor: number;
+  currency: string;
+  occurredAt: string;
+}
+
+// ─── Beneficiary ────────────────────────────────────────────────────────────
+
+export interface IBeneficiary {
+  id: string;
+  userId: string;
+  name: string;
+  accountNumber: string;
+  bankName?: string;
+  ifscCode?: string;
+  nickname?: string;
+  isVerified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateBeneficiaryDto {
+  name: string;
+  accountNumber: string;
+  bankName?: string;
+  ifscCode?: string;
+  nickname?: string;
+}
+
+export interface UpdateBeneficiaryDto {
+  nickname?: string;
+  bankName?: string;
+  ifscCode?: string;
+}
+
+export interface IBeneficiaryAddedPayload {
+  beneficiaryId: string;
+  userId: string;
+  accountNumber: string;
+  name: string;
+  addedAt: string;
+}
+
+export interface IBeneficiaryRemovedPayload {
+  beneficiaryId: string;
+  userId: string;
+  accountNumber: string;
+  removedAt: string;
+}
+
+// ─── Wallet ─────────────────────────────────────────────────────────────────
+
+export enum WalletStatus {
+  ACTIVE = 'ACTIVE',
+  FROZEN = 'FROZEN',
+  CLOSED = 'CLOSED',
+}
+
+export interface IWallet {
+  id: string;
+  userId: string;
+  balanceMinor: number;
+  currency: string;
+  status: WalletStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface WalletTopUpDto {
+  amountMinor: number;
+  description?: string;
+}
+
+export interface WalletSpendDto {
+  amountMinor: number;
+  description?: string;
+}
+
+export interface IWalletCreditedPayload {
+  walletId: string;
+  userId: string;
+  amountMinor: number;
+  balanceAfterMinor: number;
+  currency: string;
+  occurredAt: string;
+}
+
+export interface IWalletDebitedPayload {
+  walletId: string;
+  userId: string;
+  amountMinor: number;
+  balanceAfterMinor: number;
+  currency: string;
+  occurredAt: string;
+}
+
+// ─── Payment ─────────────────────────────────────────────────────────────────
+
+export enum PaymentStatus {
+  PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+  REFUNDED = 'REFUNDED',
+}
+
+export interface IPayment {
+  id: string;
+  paymentId: string;
+  userId: string;
+  method: PaymentMethod;
+  amountMinor: number;
+  currency: string;
+  fromAccountId: string;
+  toAccountId?: string;
+  upiId?: string;
+  reference?: string;
+  description?: string;
+  status: PaymentStatus;
+  failureReason?: string;
+  idempotencyKey: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface InitiatePaymentDto {
+  method: PaymentMethod;
+  amountMinor: number;
+  fromAccountId: string;
+  toAccountId?: string;
+  upiId?: string;
+  description?: string;
+  idempotencyKey?: string;
+}
+
+export interface IPaymentInitiatedPayload {
+  paymentId: string;
+  userId: string;
+  method: PaymentMethod;
+  amountMinor: number;
+  currency: string;
+  fromAccountId: string;
+  toAccountId?: string;
+  initiatedAt: string;
+}
+
+export interface IPaymentCompletedPayload {
+  paymentId: string;
+  userId: string;
+  method: PaymentMethod;
+  amountMinor: number;
+  currency: string;
+  completedAt: string;
+}
+
+export interface IPaymentFailedPayload {
+  paymentId: string;
+  userId: string;
+  amountMinor: number;
+  failureReason: string;
+  failedAt: string;
+}
+
+// ─── Notification ─────────────────────────────────────────────────────────────
+
+export enum NotificationType {
+  TRANSACTION = 'TRANSACTION',
+  ACCOUNT = 'ACCOUNT',
+  PAYMENT = 'PAYMENT',
+  SECURITY = 'SECURITY',
+  SYSTEM = 'SYSTEM',
+}
+
+export interface INotification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  read: boolean;
+  metadata?: Record<string, any>;
+  createdAt: Date;
+}
+

@@ -24,6 +24,7 @@ export class User {
   passwordHash: string;
 
   @Prop({
+    type: String,
     required: true,
     enum: UserRole,
     default: UserRole.CUSTOMER,
@@ -31,6 +32,7 @@ export class User {
   role: UserRole;
 
   @Prop({
+    type: String,
     required: true,
     enum: UserStatus,
     default: UserStatus.PENDING,

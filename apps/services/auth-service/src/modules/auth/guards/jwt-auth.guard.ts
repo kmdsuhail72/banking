@@ -1,12 +1,18 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import * as jwt from 'jsonwebtoken';
-import { appConfig } from '@banking/config';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { RedisService } from '../../redis/redis.service';
-import { JwtPayload } from '@banking/shared-types';
+import { TokenService } from '../services/token.service';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly redisService: RedisService) {}
+  constructor(
+    private readonly redisService: RedisService,
+    private readonly tokenService: TokenService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -24,10 +30,10 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      const decoded = jwt.verify(token, appConfig.jwt.accessSecret) as JwtPayload;
+      const decoded = this.tokenService.verifyAccessToken(token);
       request.user = decoded;
       return true;
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }
   }

@@ -1,0 +1,37 @@
+# values-staging.yaml — overrides for staging EKS
+global:
+  registry: "111122223333.dkr.ecr.us-east-1.amazonaws.com"  # TODO: replace
+  imageTag: "latest"
+  namespace: banking-staging
+
+ingress:
+  host: "staging.banking.example.com"  # TODO: replace
+  tls: true
+  certResolver: "letsencrypt"
+
+mongodb:
+  storage: 10Gi
+
+redis:
+  storage: 2Gi
+
+kafka:
+  storage: 10Gi
+
+# All services: 1 replica in staging to save cost
+services:
+  apiGateway:    { replicas: 1 }
+  auth:          { replicas: 1 }
+  customer:      { replicas: 1 }
+  account:       { replicas: 1 }
+  transaction:   { replicas: 1 }
+  payment:       { replicas: 1 }
+  wallet:        { replicas: 1 }
+  ledger:        { replicas: 1 }
+  beneficiary:   { replicas: 1 }
+  kycRisk:       { replicas: 1 }
+  notification:  { replicas: 1 }
+  reporting:     { replicas: 1 }
+
+pdb:
+  enabled: false   # No PDB needed in staging

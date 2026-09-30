@@ -1,0 +1,41 @@
+# ==============================================================================
+# CODEOWNERS — Banking Platform
+# Required reviewers for PRs touching sensitive areas.
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# ==============================================================================
+
+# Default: platform team reviews everything
+*                                       @kmdsuhail72
+
+# ── Infrastructure (Terraform) — requires infra + security sign-off ───────────
+/terraform/                             @kmdsuhail72
+/terraform/modules/iam/                 @kmdsuhail72
+/terraform/modules/secrets/             @kmdsuhail72
+
+# ── Kubernetes / Helm — requires platform team review ─────────────────────────
+/helm/                                  @kmdsuhail72
+/k8s/                                   @kmdsuhail72
+/gitops/                                @kmdsuhail72
+
+# ── GitHub Actions CI/CD — requires platform sign-off ─────────────────────────
+/.github/workflows/                     @kmdsuhail72
+
+# ── Payment service — requires payment lead + security review ─────────────────
+/apps/services/payment-service/         @kmdsuhail72
+/apps/services/ledger-service/          @kmdsuhail72
+/apps/services/transaction-service/     @kmdsuhail72
+
+# ── Auth service — security-critical, requires security review ────────────────
+/apps/services/auth-service/            @kmdsuhail72
+/apps/services/authz-service/           @kmdsuhail72
+
+# ── Fraud & compliance — requires risk team sign-off ─────────────────────────
+/apps/services/fraud-service/           @kmdsuhail72
+/apps/services/compliance-service/      @kmdsuhail72
+/apps/services/kyc-risk-service/        @kmdsuhail72
+
+# ── Shared packages — any change must be reviewed by platform lead ────────────
+/packages/                              @kmdsuhail72
+
+# ── Observability — platform team ─────────────────────────────────────────────
+/infrastructure/observability/          @kmdsuhail72
