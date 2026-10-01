@@ -221,3 +221,4 @@ bootstrap prerequisites, preview commands, and rollback instructions.
 
 - [Incident management: implementation and deployment](apps/incident-management/README.md)
 - [SLIs, SLOs, PromQL and error budget deployment policy](infrastructure/observability/SLO.md)
+- [Controlled Kubernetes chaos: synthetic lab, experiments and rollback](infrastructure/chaos/README.md)

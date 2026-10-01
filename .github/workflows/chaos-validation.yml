@@ -1,0 +1,45 @@
+name: Controlled chaos validation
+on:
+  push:
+    paths: ["infrastructure/chaos/**", ".github/workflows/chaos-validation.yml"]
+  pull_request:
+    paths: ["infrastructure/chaos/**", ".github/workflows/chaos-validation.yml"]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: python -m unittest discover -s infrastructure/chaos/tests -v
+      - run: node --test infrastructure/chaos/tests/lab.test.cjs
+      - run: docker build -f infrastructure/chaos/lab/Dockerfile -t banking-chaos-validation .
+      - uses: helm/kind-action@v1
+        with:
+          version: v0.27.0
+          node_image: kindest/node:v1.32.2
+          cluster_name: banking-chaos-validation
+      - name: Install schemas and guard policies only
+        run: |
+          helm repo add chaos-mesh https://charts.chaos-mesh.org
+          helm show crds chaos-mesh/chaos-mesh --version 2.8.4 > /tmp/chaos-crds.yaml
+          kubectl --context kind-banking-chaos-validation apply --server-side -f /tmp/chaos-crds.yaml
+          kubectl --context kind-banking-chaos-validation wait --for=condition=Established crd --all --timeout=90s
+          kubectl --context kind-banking-chaos-validation create namespace banking-chaos
+          kubectl --context kind-banking-chaos-validation label namespace banking-chaos chaos.banking.io/environment=nonproduction chaos.banking.io/data=synthetic
+          kubectl --context kind-banking-chaos-validation apply -f infrastructure/chaos/safety/admission.json
+          python infrastructure/chaos/tests/admission_check.py
+      - name: Validate lab and monitoring configuration
+        run: |
+          python infrastructure/chaos/render_lab.py --image "example.invalid/banking@sha256:$(printf 'a%.0s' {1..64})" --output /tmp/lab.json
+          kubectl --context kind-banking-chaos-validation create namespace chaos-egress-canary
+          python -c "import json; p='/tmp/lab.json'; d=json.load(open(p)); d['items']=[x for x in d['items'] if x['kind']!='Namespace']; json.dump(d,open(p,'w'))"
+          kubectl --context kind-banking-chaos-validation apply --dry-run=server -f /tmp/lab.json
+          docker run --rm --entrypoint promtool -v "$PWD/infrastructure/chaos/monitoring:/rules:ro" prom/prometheus:v3.2.1 check rules /rules/rules.json

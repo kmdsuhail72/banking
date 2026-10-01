@@ -1,0 +1,189 @@
+{
+  "uid": "banking-chaos-nonproduction",
+  "title": "Banking Chaos ? SYNTHETIC NON-PRODUCTION ONLY",
+  "schemaVersion": 40,
+  "version": 1,
+  "tags": [
+    "chaos",
+    "nonproduction"
+  ],
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "DS_CHAOS",
+        "type": "datasource",
+        "query": "prometheus",
+        "label": "Isolated lab Prometheus"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Technical request failure ratio",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_CHAOS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(banking_chaos_http_requests_total{namespace=\"banking-chaos\",outcome=\"technical_failure\"}[1m])) / sum(rate(banking_chaos_http_requests_total{namespace=\"banking-chaos\"}[1m]))"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Request rate",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_CHAOS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(banking_chaos_http_requests_total{namespace=\"banking-chaos\"}[1m]))"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "API p95",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_CHAOS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95,sum by (le)(rate(banking_chaos_http_duration_seconds_bucket{namespace=\"banking-chaos\"}[1m])))"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "API p99",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_CHAOS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.99,sum by (le)(rate(banking_chaos_http_duration_seconds_bucket{namespace=\"banking-chaos\"}[1m])))"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Integrity violations ? must remain zero",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_CHAOS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "banking_chaos_integrity_violations{namespace=\"banking-chaos\"}"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Integrity evidence age",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_CHAOS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - banking_chaos_integrity_checked_timestamp_seconds{namespace=\"banking-chaos\"}"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      }
+    }
+  ]
+}

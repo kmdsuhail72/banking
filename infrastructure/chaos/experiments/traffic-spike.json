@@ -1,0 +1,83 @@
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "name": "traffic-spike",
+    "namespace": "banking-chaos",
+    "labels": {
+      "chaos.banking.io/managed": "true"
+    }
+  },
+  "spec": {
+    "backoffLimit": 0,
+    "activeDeadlineSeconds": 110,
+    "ttlSecondsAfterFinished": 3600,
+    "parallelism": 1,
+    "completions": 1,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "chaos-load",
+          "chaos.banking.io/data": "synthetic"
+        }
+      },
+      "spec": {
+        "restartPolicy": "Never",
+        "automountServiceAccountToken": false,
+        "nodeSelector": {
+          "chaos.banking.io/dedicated": "true"
+        },
+        "containers": [
+          {
+            "name": "load",
+            "image": "node:22.14.0-alpine",
+            "command": [
+              "node",
+              "/lab/load.cjs",
+              "spike"
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "64Mi"
+              },
+              "limits": {
+                "cpu": "300m",
+                "memory": "128Mi"
+              }
+            },
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1000,
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "volumeMounts": [
+              {
+                "name": "scripts",
+                "mountPath": "/lab",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "scripts",
+            "configMap": {
+              "name": "chaos-lab-scripts"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
