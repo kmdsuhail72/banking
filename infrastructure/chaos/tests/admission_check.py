@@ -63,6 +63,9 @@ if __name__ == "__main__":
     ]:
         check(concrete(name), True)
     check(bad, False)
+    oversized = concrete("traffic-spike")
+    oversized["spec"]["template"]["spec"]["containers"][0]["resources"]["limits"]["cpu"] = "4"
+    check(oversized, False)
     for name, mutate in [
         ("pod-crash", lambda d: d["metadata"].update(namespace="default")),
         (
@@ -91,5 +94,5 @@ if __name__ == "__main__":
         mutate(doc)
         check(doc, False)
     print(
-        "Nine allowed manifests and seven unsafe variants checked; no faults persisted."
+        "Nine allowed manifests and eight unsafe variants checked; no faults persisted."
     )

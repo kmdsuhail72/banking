@@ -40,7 +40,8 @@
                 "blockchaos",
                 "workflows",
                 "schedules"
-              ]
+              ],
+              "scope": "*"
             }
           ],
           "matchPolicy": "Equivalent",
@@ -130,7 +131,8 @@
               ],
               "resources": [
                 "jobs"
-              ]
+              ],
+              "scope": "*"
             }
           ]
         },
@@ -152,7 +154,7 @@
             "message": "No secrets or arbitrary script volumes in load jobs"
           },
           {
-            "expression": "object.spec.template.metadata.labels['app'] == 'chaos-load' && quantity(object.spec.template.spec.containers[0].resources.limits['cpu']).compareTo(quantity('300m')) == 0 && quantity(object.spec.template.spec.containers[0].resources.limits['memory']).compareTo(quantity('128Mi')) == 0",
+            "expression": "object.spec.template.metadata.labels['app'] == 'chaos-load' && quantity(dyn(object.spec.template.spec.containers[0].resources).limits['cpu']).compareTo(quantity('300m')) == 0 && quantity(dyn(object.spec.template.spec.containers[0].resources).limits['memory']).compareTo(quantity('128Mi')) == 0",
             "message": "Load labels and resource limits are fixed"
           }
         ]
