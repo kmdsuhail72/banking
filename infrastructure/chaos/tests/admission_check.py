@@ -4,7 +4,7 @@ import copy
 import json
 import subprocess
 import time
-from test_safety import concrete
+from test_safety import concrete, ROOT
 
 CONTEXT = "kind-banking-chaos-validation"
 
@@ -50,6 +50,13 @@ if __name__ == "__main__":
             .get("typeChecking", {})
             .get("expressionWarnings")
         ), policy
+    # Keep preflight's exact comparison compatible with API-server defaults.
+    for expected in json.loads((ROOT / "safety/admission.json").read_text())["items"]:
+        live = kubectl("get", expected["kind"], expected["metadata"]["name"], "-o", "json")
+        assert live.returncode == 0, live.stderr
+        actual = json.loads(live.stdout)["spec"]
+        for key, value in expected["spec"].items():
+            assert actual.get(key) == value, (expected["metadata"]["name"], key, actual.get(key), value)
     for name in [
         "pod-crash",
         "container-restart",
@@ -64,7 +71,9 @@ if __name__ == "__main__":
         check(concrete(name), True)
     check(bad, False)
     oversized = concrete("traffic-spike")
-    oversized["spec"]["template"]["spec"]["containers"][0]["resources"]["limits"]["cpu"] = "4"
+    oversized["spec"]["template"]["spec"]["containers"][0]["resources"]["limits"][
+        "cpu"
+    ] = "4"
     check(oversized, False)
     for name, mutate in [
         ("pod-crash", lambda d: d["metadata"].update(namespace="default")),

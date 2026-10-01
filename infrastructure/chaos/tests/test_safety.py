@@ -227,6 +227,14 @@ class Guards(unittest.TestCase):
             with self.assertRaises(chaos.Unsafe):
                 chaos.prom(Fake(result), "up")
 
+    def test_stale_scrapes_cannot_pass_with_fresh_query_timestamps(self):
+        with patch.object(chaos, "prom", return_value=[1]) as query:
+            with self.assertRaisesRegex(chaos.Unsafe, "fresh metric samples"):
+                chaos.telemetry(None)
+            self.assertIn(
+                "timestamp(banking_chaos_http_requests_total", query.call_args.args[1]
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

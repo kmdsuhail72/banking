@@ -540,6 +540,15 @@ def prom(client, expr):
 
 def telemetry(client, baseline=False, enforce=True):
     select = 'namespace="banking-chaos"'
+    # Query-result timestamps are evaluation times, not scrape times. Check the
+    # underlying samples so a stopped scraper cannot leave convincing old rates.
+    fresh = max(
+        prom(
+            client,
+            f'sum((time() - timestamp(banking_chaos_http_requests_total{{{select},outcome="success"}})) < bool 15)',
+        )
+    )
+    require(fresh >= 2, "Fewer than two API replicas have fresh metric samples")
     count = max(
         prom(
             client, f"sum(increase(banking_chaos_http_requests_total{{{select}}}[1m]))"
@@ -567,7 +576,12 @@ def telemetry(client, baseline=False, enforce=True):
         require(
             p99 <= (1 if baseline else 2), f"p99 {p99:.3f}s breached abort threshold"
         )
-    return {"requests": count, "errorRatio": errors, "p99Seconds": p99}
+    return {
+        "requests": count,
+        "errorRatio": errors,
+        "p99Seconds": p99,
+        "freshMetricReplicas": fresh,
+    }
 
 
 def source_memory(client, pod):
