@@ -1,0 +1,23 @@
+global:
+  resolve_timeout: 5m
+route:
+  receiver: ignored
+  group_by: [alertname, service, severity]
+  group_wait: 0s
+  group_interval: 1m
+  repeat_interval: 15m
+  routes:
+    - matchers: ['severity="critical"']
+      group_by: ['...']
+      receiver: incidents
+receivers:
+  - name: ignored
+  - name: incidents
+    webhook_configs:
+      - url: http://incident-management:4020/api/alertmanager
+        send_resolved: true
+        max_alerts: 100
+        http_config:
+          authorization:
+            type: Bearer
+            credentials_file: /run/secrets/webhook-token

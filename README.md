@@ -216,3 +216,8 @@ at zero replicas until the first real image is promoted.
 
 See [GitOps setup and demo](docs/development/gitops.md) for the deployment diagram,
 bootstrap prerequisites, preview commands, and rollback instructions.
+
+## SRE operations
+
+- [Incident management: implementation and deployment](apps/incident-management/README.md)
+- [SLIs, SLOs, PromQL and error budget deployment policy](infrastructure/observability/SLO.md)

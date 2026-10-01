@@ -1,3 +1,4 @@
+import { createSloMetrics, httpOutcome } from "./slo";
 import {
   collectDefaultMetrics,
   Counter,
@@ -26,7 +27,7 @@ export function createMetrics(service: string) {
     name: "banking_http_request_duration_seconds",
     help: "HTTP request duration in seconds",
     labelNames: ["method", "route", "status_code"],
-    buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
+    buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.3, 0.5, 1, 2.5, 5, 10],
     registers: [registry],
   });
 
@@ -49,7 +50,7 @@ export function createMetrics(service: string) {
   // ── Database ─────────────────────────────────────────────────────────────────
   const dbQueryDuration = new Histogram({
     name: "banking_db_query_duration_seconds",
-    help: "MongoDB query duration in seconds",
+    help: "Database query duration in seconds",
     labelNames: ["operation", "collection"],
     buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5],
     registers: [registry],
@@ -57,7 +58,7 @@ export function createMetrics(service: string) {
 
   const dbErrors = new Counter({
     name: "banking_db_errors_total",
-    help: "Total MongoDB operation errors",
+    help: "Total database operation errors",
     labelNames: ["operation", "collection"],
     registers: [registry],
   });
@@ -86,6 +87,7 @@ export function createMetrics(service: string) {
 
   return {
     registry,
+    slo: createSloMetrics(registry),
     requests,
     duration,
     activeRequests,
@@ -109,7 +111,7 @@ export function installMetrics(
   app: { use: (...args: any[]) => any; getHttpAdapter: () => any },
   service: string,
 ): ServiceMetrics {
-  const metrics = createMetrics(service);
+  const metrics = getServiceMetrics(service);
   const { registry, requests, duration, activeRequests } = metrics;
 
   // ── Prometheus scrape endpoint ────────────────────────────────────────────
@@ -133,7 +135,10 @@ export function installMetrics(
     const span = trace.getSpan(context.active());
     activeRequests.inc({ method: req.method });
 
-    res.once("finish", () => {
+    let recorded = false;
+    const complete = (aborted: boolean) => {
+      if (recorded) return;
+      recorded = true;
       activeRequests.dec({ method: req.method });
       const route = req.route?.path || "unmatched";
       const method = [
@@ -150,15 +155,23 @@ export function installMetrics(
       const labels = {
         method,
         route: String(route),
-        status_code: String(res.statusCode),
+        status_code: aborted ? "499" : String(res.statusCode),
       };
+      metrics.slo.requests.inc({
+        outcome: httpOutcome(res.statusCode, aborted),
+      });
+      metrics.slo.latency.observe(
+        Number(process.hrtime.bigint() - started) / 1e9,
+      );
       requests.inc(labels);
       duration.observe(labels, Number(process.hrtime.bigint() - started) / 1e9);
 
       // Enrich the active OTel span with route template (not the raw URL).
       span?.updateName(`${method} ${route}`);
       span?.setAttribute("http.route", String(route));
-    });
+    };
+    res.once("finish", () => complete(false));
+    res.once("close", () => complete(true));
     next();
   });
 
@@ -206,4 +219,14 @@ export function recordBusinessEvent(
   status: "success" | "failure" | "pending",
 ): void {
   metrics.businessEvents.inc({ event_type: eventType, status });
+}
+
+const serviceMetrics = new Map<string, ServiceMetrics>();
+export function getServiceMetrics(service: string): ServiceMetrics {
+  let metrics = serviceMetrics.get(service);
+  if (!metrics) {
+    metrics = createMetrics(service);
+    serviceMetrics.set(service, metrics);
+  }
+  return metrics;
 }

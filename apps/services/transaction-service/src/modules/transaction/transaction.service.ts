@@ -1,3 +1,4 @@
+import { observeOperation, businessRejection } from "@banking/observability";
 import {
   Injectable,
   BadRequestException,
@@ -75,12 +76,21 @@ export class TransactionService {
         errResponse?.message || err.message || "Balance mutation failed";
 
       if (status === 404) {
-        throw new NotFoundException(`Account '${accountId}' not found`);
+        throw businessRejection(
+          new NotFoundException(`Account '${accountId}' not found`),
+        );
       }
       if (status === 400) {
-        throw new BadRequestException(
+        const error = new BadRequestException(
           errResponse || { code: "BAD_REQUEST", message: msg },
         );
+        throw [
+          "INSUFFICIENT_FUNDS",
+          "ACCOUNT_FROZEN",
+          "LIMIT_EXCEEDED",
+        ].includes(errResponse?.code)
+          ? businessRejection(error)
+          : error;
       }
       throw new InternalServerErrorException(
         `Account service communication error: ${msg}`,
@@ -100,9 +110,11 @@ export class TransactionService {
       return response.data;
     } catch (err: any) {
       if (err.response?.status === 404) {
-        throw new NotFoundException(`Account '${accountIdOrNumber}' not found`);
+        throw businessRejection(
+          new NotFoundException(`Account '${accountIdOrNumber}' not found`),
+        );
       }
-      throw new BadRequestException(
+      throw new InternalServerErrorException(
         err.response?.data?.message ||
           `Could not retrieve account '${accountIdOrNumber}'`,
       );
@@ -120,76 +132,95 @@ export class TransactionService {
     const key = idempotencyKey || uuidv4();
 
     // 1. Idempotency check
-    const cached = await this.idempotencyService.getStoredResponse(userId, key);
+    const cached = await this.idempotencyService
+      .getStoredResponse(userId, key)
+      .catch((error) =>
+        observeOperation(
+          "transaction-service",
+          "transaction",
+          "deposit",
+          async () => {
+            throw error;
+          },
+        ),
+      );
     if (cached) return cached;
 
-    const transactionId = this.generateTransactionId();
+    return observeOperation(
+      "transaction-service",
+      "transaction",
+      "deposit",
+      async () => {
+        const transactionId = this.generateTransactionId();
 
-    // 2. Create PENDING transaction
-    const transaction = await this.transactionModel.create({
-      transactionId,
-      userId,
-      accountId: dto.accountId,
-      type: TransactionType.DEPOSIT,
-      amountMinor: dto.amountMinor,
-      currency: "INR",
-      description: dto.description || "Cash / Online Deposit",
-      status: TransactionStatus.PENDING,
-      idempotencyKey: key,
-    });
+        // 2. Create PENDING transaction
+        const transaction = await this.transactionModel.create({
+          transactionId,
+          userId,
+          accountId: dto.accountId,
+          type: TransactionType.DEPOSIT,
+          amountMinor: dto.amountMinor,
+          currency: "INR",
+          description: dto.description || "Cash / Online Deposit",
+          status: TransactionStatus.PENDING,
+          idempotencyKey: key,
+        });
 
-    try {
-      // 3. Mutate Account Balance (CREDIT)
-      const updatedAccount = await this.mutateAccountBalance(
-        dto.accountId,
-        dto.amountMinor,
-        "CREDIT",
-        dto.description,
-        transactionId,
-      );
+        try {
+          // 3. Mutate Account Balance (CREDIT)
+          const updatedAccount = await this.mutateAccountBalance(
+            dto.accountId,
+            dto.amountMinor,
+            "CREDIT",
+            dto.description,
+            transactionId,
+          );
 
-      // 4. Mark transaction COMPLETED
-      transaction.status = TransactionStatus.COMPLETED;
-      transaction.accountId = updatedAccount.accountNumber || dto.accountId;
-      await transaction.save();
+          // 4. Mark transaction COMPLETED
+          transaction.status = TransactionStatus.COMPLETED;
+          transaction.accountId = updatedAccount.accountNumber || dto.accountId;
+          await transaction.save();
 
-      this.logger.info(
-        `Deposit completed: ${transactionId} -> ${dto.amountMinor} paise`,
-      );
+          this.logger.info(
+            `Deposit completed: ${transactionId} -> ${dto.amountMinor} paise`,
+          );
 
-      // 5. Outbox Event & Kafka dispatch
-      const eventPayload: IMoneyDepositedPayload = {
-        transactionId,
-        accountId: updatedAccount._id || dto.accountId,
-        accountNumber: updatedAccount.accountNumber,
-        userId,
-        amountMinor: dto.amountMinor,
-        currency: "INR",
-        occurredAt: new Date().toISOString(),
-      };
+          // 5. Outbox Event & Kafka dispatch
+          const eventPayload: IMoneyDepositedPayload = {
+            transactionId,
+            accountId: updatedAccount._id || dto.accountId,
+            accountNumber: updatedAccount.accountNumber,
+            userId,
+            amountMinor: dto.amountMinor,
+            currency: "INR",
+            occurredAt: new Date().toISOString(),
+          };
 
-      await this.outboxService.saveAndPublishEvent(
-        KafkaTopics.MONEY_DEPOSITED,
-        "MoneyDeposited",
-        transactionId,
-        eventPayload,
-      );
+          await this.outboxService.saveAndPublishEvent(
+            KafkaTopics.MONEY_DEPOSITED,
+            "MoneyDeposited",
+            transactionId,
+            eventPayload,
+          );
 
-      // 6. Store Idempotency Response
-      await this.idempotencyService.storeResponse(
-        userId,
-        key,
-        transactionId,
-        transaction,
-      );
+          // 6. Store Idempotency Response
+          await this.idempotencyService.storeResponse(
+            userId,
+            key,
+            transactionId,
+            transaction,
+          );
 
-      return transaction;
-    } catch (err: any) {
-      transaction.status = TransactionStatus.FAILED;
-      transaction.failureReason = err.message || "Deposit processing failed";
-      await transaction.save();
-      throw err;
-    }
+          return transaction;
+        } catch (err: any) {
+          transaction.status = TransactionStatus.FAILED;
+          transaction.failureReason =
+            err.message || "Deposit processing failed";
+          await transaction.save();
+          throw err;
+        }
+      },
+    );
   }
 
   /**
@@ -203,83 +234,104 @@ export class TransactionService {
     const key = idempotencyKey || uuidv4();
 
     // 1. Idempotency check
-    const cached = await this.idempotencyService.getStoredResponse(userId, key);
+    const cached = await this.idempotencyService
+      .getStoredResponse(userId, key)
+      .catch((error) =>
+        observeOperation(
+          "transaction-service",
+          "transaction",
+          "withdraw",
+          async () => {
+            throw error;
+          },
+        ),
+      );
     if (cached) return cached;
 
-    // 2. Verify account ownership
-    const account = await this.fetchAccount(dto.accountId);
-    if (account.userId && account.userId !== userId) {
-      throw new ForbiddenException(
-        "You do not have permission to withdraw from this account",
-      );
-    }
+    return observeOperation(
+      "transaction-service",
+      "transaction",
+      "withdraw",
+      async () => {
+        // 2. Verify account ownership
+        const account = await this.fetchAccount(dto.accountId);
+        if (account.userId && account.userId !== userId) {
+          throw businessRejection(
+            new ForbiddenException(
+              "You do not have permission to withdraw from this account",
+            ),
+          );
+        }
 
-    const transactionId = this.generateTransactionId();
+        const transactionId = this.generateTransactionId();
 
-    // 3. Create PENDING transaction
-    const transaction = await this.transactionModel.create({
-      transactionId,
-      userId,
-      accountId: account.accountNumber || dto.accountId,
-      type: TransactionType.WITHDRAWAL,
-      amountMinor: dto.amountMinor,
-      currency: "INR",
-      description: dto.description || "ATM / Cash Withdrawal",
-      status: TransactionStatus.PENDING,
-      idempotencyKey: key,
-    });
+        // 3. Create PENDING transaction
+        const transaction = await this.transactionModel.create({
+          transactionId,
+          userId,
+          accountId: account.accountNumber || dto.accountId,
+          type: TransactionType.WITHDRAWAL,
+          amountMinor: dto.amountMinor,
+          currency: "INR",
+          description: dto.description || "ATM / Cash Withdrawal",
+          status: TransactionStatus.PENDING,
+          idempotencyKey: key,
+        });
 
-    try {
-      // 4. Mutate Account Balance (DEBIT)
-      const updatedAccount = await this.mutateAccountBalance(
-        dto.accountId,
-        dto.amountMinor,
-        "DEBIT",
-        dto.description,
-        transactionId,
-      );
+        try {
+          // 4. Mutate Account Balance (DEBIT)
+          const updatedAccount = await this.mutateAccountBalance(
+            dto.accountId,
+            dto.amountMinor,
+            "DEBIT",
+            dto.description,
+            transactionId,
+          );
 
-      // 5. Mark transaction COMPLETED
-      transaction.status = TransactionStatus.COMPLETED;
-      await transaction.save();
+          // 5. Mark transaction COMPLETED
+          transaction.status = TransactionStatus.COMPLETED;
+          await transaction.save();
 
-      this.logger.info(
-        `Withdrawal completed: ${transactionId} -> ${dto.amountMinor} paise`,
-      );
+          this.logger.info(
+            `Withdrawal completed: ${transactionId} -> ${dto.amountMinor} paise`,
+          );
 
-      // 6. Outbox Event & Kafka dispatch
-      const eventPayload: IMoneyWithdrawnPayload = {
-        transactionId,
-        accountId: updatedAccount._id || dto.accountId,
-        accountNumber: updatedAccount.accountNumber,
-        userId,
-        amountMinor: dto.amountMinor,
-        currency: "INR",
-        occurredAt: new Date().toISOString(),
-      };
+          // 6. Outbox Event & Kafka dispatch
+          const eventPayload: IMoneyWithdrawnPayload = {
+            transactionId,
+            accountId: updatedAccount._id || dto.accountId,
+            accountNumber: updatedAccount.accountNumber,
+            userId,
+            amountMinor: dto.amountMinor,
+            currency: "INR",
+            occurredAt: new Date().toISOString(),
+          };
 
-      await this.outboxService.saveAndPublishEvent(
-        KafkaTopics.MONEY_WITHDRAWN,
-        "MoneyWithdrawn",
-        transactionId,
-        eventPayload,
-      );
+          await this.outboxService.saveAndPublishEvent(
+            KafkaTopics.MONEY_WITHDRAWN,
+            "MoneyWithdrawn",
+            transactionId,
+            eventPayload,
+          );
 
-      // 7. Store Idempotency Response
-      await this.idempotencyService.storeResponse(
-        userId,
-        key,
-        transactionId,
-        transaction,
-      );
+          // 7. Store Idempotency Response
+          await this.idempotencyService.storeResponse(
+            userId,
+            key,
+            transactionId,
+            transaction,
+          );
 
-      return transaction;
-    } catch (err: any) {
-      transaction.status = TransactionStatus.FAILED;
-      transaction.failureReason = err.message || "Withdrawal processing failed";
-      await transaction.save();
-      throw err;
-    }
+          return transaction;
+        } catch (err: any) {
+          transaction.status = TransactionStatus.FAILED;
+          transaction.failureReason =
+            err.message || "Withdrawal processing failed";
+          await transaction.save();
+          throw err;
+        }
+      },
+    );
   }
 
   /**
@@ -293,126 +345,151 @@ export class TransactionService {
     const key = idempotencyKey || uuidv4();
 
     // 1. Idempotency check
-    const cached = await this.idempotencyService.getStoredResponse(userId, key);
+    const cached = await this.idempotencyService
+      .getStoredResponse(userId, key)
+      .catch((error) =>
+        observeOperation(
+          "transaction-service",
+          "transaction",
+          "transfer",
+          async () => {
+            throw error;
+          },
+        ),
+      );
     if (cached) return cached;
 
-    // 2. Reject same-account transfer
-    if (
-      dto.sourceAccountId.trim().toUpperCase() ===
-      dto.destinationAccountId.trim().toUpperCase()
-    ) {
-      throw new BadRequestException({
-        code: "INVALID_TRANSFER",
-        message: "Source and destination accounts must be different",
-      });
-    }
+    return observeOperation(
+      "transaction-service",
+      "transaction",
+      "transfer",
+      async () => {
+        // 2. Reject same-account transfer
+        if (
+          dto.sourceAccountId.trim().toUpperCase() ===
+          dto.destinationAccountId.trim().toUpperCase()
+        ) {
+          throw businessRejection(
+            new BadRequestException({
+              code: "INVALID_TRANSFER",
+              message: "Source and destination accounts must be different",
+            }),
+          );
+        }
 
-    // 3. Verify source account ownership
-    const sourceAccount = await this.fetchAccount(dto.sourceAccountId);
-    if (sourceAccount.userId && sourceAccount.userId !== userId) {
-      throw new ForbiddenException(
-        "You do not have permission to transfer from this source account",
-      );
-    }
+        // 3. Verify source account ownership
+        const sourceAccount = await this.fetchAccount(dto.sourceAccountId);
+        if (sourceAccount.userId && sourceAccount.userId !== userId) {
+          throw businessRejection(
+            new ForbiddenException(
+              "You do not have permission to transfer from this source account",
+            ),
+          );
+        }
 
-    // 4. Verify destination account exists
-    const destAccount = await this.fetchAccount(dto.destinationAccountId);
+        // 4. Verify destination account exists
+        const destAccount = await this.fetchAccount(dto.destinationAccountId);
 
-    const transactionId = this.generateTransactionId();
+        const transactionId = this.generateTransactionId();
 
-    // 5. Create PENDING transaction
-    const transaction = await this.transactionModel.create({
-      transactionId,
-      userId,
-      accountId: sourceAccount.accountNumber || dto.sourceAccountId,
-      destinationAccountId:
-        destAccount.accountNumber || dto.destinationAccountId,
-      type: TransactionType.TRANSFER,
-      amountMinor: dto.amountMinor,
-      currency: "INR",
-      description:
-        dto.description || `Transfer to ${destAccount.accountNumber}`,
-      status: TransactionStatus.PENDING,
-      idempotencyKey: key,
-    });
-
-    try {
-      // 6. Step 1: Atomic Debit from Source Account
-      await this.mutateAccountBalance(
-        dto.sourceAccountId,
-        dto.amountMinor,
-        "DEBIT",
-        `Transfer to ${destAccount.accountNumber}`,
-        transactionId,
-      );
-
-      // 7. Step 2: Atomic Credit to Destination Account
-      try {
-        await this.mutateAccountBalance(
-          dto.destinationAccountId,
-          dto.amountMinor,
-          "CREDIT",
-          `Transfer from ${sourceAccount.accountNumber}`,
+        // 5. Create PENDING transaction
+        const transaction = await this.transactionModel.create({
           transactionId,
-        );
-      } catch (creditErr: any) {
-        // Rollback debit on destination failure
-        this.logger.error(
-          `Destination credit failed for transfer ${transactionId}. Rolling back debit...`,
-        );
-        await this.mutateAccountBalance(
-          dto.sourceAccountId,
-          dto.amountMinor,
-          "CREDIT",
-          `Rollback: Transfer ${transactionId} failed`,
-          transactionId,
-        );
-        throw creditErr;
-      }
+          userId,
+          accountId: sourceAccount.accountNumber || dto.sourceAccountId,
+          destinationAccountId:
+            destAccount.accountNumber || dto.destinationAccountId,
+          type: TransactionType.TRANSFER,
+          amountMinor: dto.amountMinor,
+          currency: "INR",
+          description:
+            dto.description || `Transfer to ${destAccount.accountNumber}`,
+          status: TransactionStatus.PENDING,
+          idempotencyKey: key,
+        });
 
-      // 8. Mark transaction COMPLETED
-      transaction.status = TransactionStatus.COMPLETED;
-      await transaction.save();
+        try {
+          // 6. Step 1: Atomic Debit from Source Account
+          await this.mutateAccountBalance(
+            dto.sourceAccountId,
+            dto.amountMinor,
+            "DEBIT",
+            `Transfer to ${destAccount.accountNumber}`,
+            transactionId,
+          );
 
-      this.logger.info(
-        `Transfer completed: ${transactionId} -> ${dto.amountMinor} paise from ${sourceAccount.accountNumber} to ${destAccount.accountNumber}`,
-      );
+          // 7. Step 2: Atomic Credit to Destination Account
+          try {
+            await this.mutateAccountBalance(
+              dto.destinationAccountId,
+              dto.amountMinor,
+              "CREDIT",
+              `Transfer from ${sourceAccount.accountNumber}`,
+              transactionId,
+            );
+          } catch (creditErr: any) {
+            // Rollback debit on destination failure
+            this.logger.error(
+              `Destination credit failed for transfer ${transactionId}. Rolling back debit...`,
+            );
+            await this.mutateAccountBalance(
+              dto.sourceAccountId,
+              dto.amountMinor,
+              "CREDIT",
+              `Rollback: Transfer ${transactionId} failed`,
+              transactionId,
+            );
+            throw new InternalServerErrorException(
+              "Transfer credit failed after debit; compensation attempted",
+            );
+          }
 
-      // 9. Outbox Event & Kafka dispatch
-      const eventPayload: IMoneyTransferredPayload = {
-        transactionId,
-        sourceAccountId: sourceAccount._id || dto.sourceAccountId,
-        sourceAccountNumber: sourceAccount.accountNumber,
-        destinationAccountId: destAccount._id || dto.destinationAccountId,
-        destinationAccountNumber: destAccount.accountNumber,
-        userId,
-        amountMinor: dto.amountMinor,
-        currency: "INR",
-        occurredAt: new Date().toISOString(),
-      };
+          // 8. Mark transaction COMPLETED
+          transaction.status = TransactionStatus.COMPLETED;
+          await transaction.save();
 
-      await this.outboxService.saveAndPublishEvent(
-        KafkaTopics.MONEY_TRANSFERRED,
-        "MoneyTransferred",
-        transactionId,
-        eventPayload,
-      );
+          this.logger.info(
+            `Transfer completed: ${transactionId} -> ${dto.amountMinor} paise from ${sourceAccount.accountNumber} to ${destAccount.accountNumber}`,
+          );
 
-      // 10. Store Idempotency Response
-      await this.idempotencyService.storeResponse(
-        userId,
-        key,
-        transactionId,
-        transaction,
-      );
+          // 9. Outbox Event & Kafka dispatch
+          const eventPayload: IMoneyTransferredPayload = {
+            transactionId,
+            sourceAccountId: sourceAccount._id || dto.sourceAccountId,
+            sourceAccountNumber: sourceAccount.accountNumber,
+            destinationAccountId: destAccount._id || dto.destinationAccountId,
+            destinationAccountNumber: destAccount.accountNumber,
+            userId,
+            amountMinor: dto.amountMinor,
+            currency: "INR",
+            occurredAt: new Date().toISOString(),
+          };
 
-      return transaction;
-    } catch (err: any) {
-      transaction.status = TransactionStatus.FAILED;
-      transaction.failureReason = err.message || "Transfer processing failed";
-      await transaction.save();
-      throw err;
-    }
+          await this.outboxService.saveAndPublishEvent(
+            KafkaTopics.MONEY_TRANSFERRED,
+            "MoneyTransferred",
+            transactionId,
+            eventPayload,
+          );
+
+          // 10. Store Idempotency Response
+          await this.idempotencyService.storeResponse(
+            userId,
+            key,
+            transactionId,
+            transaction,
+          );
+
+          return transaction;
+        } catch (err: any) {
+          transaction.status = TransactionStatus.FAILED;
+          transaction.failureReason =
+            err.message || "Transfer processing failed";
+          await transaction.save();
+          throw err;
+        }
+      },
+    );
   }
 
   /**

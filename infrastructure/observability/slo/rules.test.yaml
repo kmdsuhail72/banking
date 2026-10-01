@@ -1,0 +1,32 @@
+rule_files:
+  - ../prometheus/rules/banking-slo.yaml
+evaluation_interval: 30s
+tests:
+  - name: successful transactions keep their full budget
+    interval: 30s
+    input_series:
+      - series: 'banking_sli_operations_total{job="banking",service="transaction-service",kind="transaction",operation="transfer",outcome="success"}'
+        values: '0+1000x20'
+      - series: 'banking_sli_operations_total{job="banking",service="transaction-service",kind="transaction",operation="transfer",outcome="technical_failure"}'
+        values: '0+0x20'
+    promql_expr_test:
+      - expr: 'banking:slo_budget_remaining_ratio:30d{slo="transactions"} == bool 1'
+        eval_time: 10m
+        exp_samples:
+          - labels: '{service="transaction-service",slo="transactions"}'
+            value: 1
+  - name: valid business rejections cannot dilute technical failures
+    interval: 30s
+    input_series:
+      - series: 'banking_sli_operations_total{job="banking",service="transaction-service",kind="transaction",operation="transfer",outcome="success"}'
+        values: '0+999x20'
+      - series: 'banking_sli_operations_total{job="banking",service="transaction-service",kind="transaction",operation="transfer",outcome="technical_failure"}'
+        values: '0+1x20'
+      - series: 'banking_sli_operations_total{job="banking",service="transaction-service",kind="transaction",operation="transfer",outcome="business_rejection"}'
+        values: '0+100000x20'
+    promql_expr_test:
+      - expr: 'banking:slo_budget_remaining_ratio:30d{slo="transactions"} < bool 0'
+        eval_time: 10m
+        exp_samples:
+          - labels: '{service="transaction-service",slo="transactions"}'
+            value: 1

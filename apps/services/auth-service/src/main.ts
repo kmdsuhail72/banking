@@ -1,3 +1,5 @@
+import { DataSource } from "typeorm";
+import { instrumentDataSource } from "@banking/observability";
 import {
   startTelemetry,
   installMetrics,
@@ -28,7 +30,8 @@ async function bootstrap() {
     },
   });
 
-  installMetrics(app, "auth-service");
+  const metrics = installMetrics(app, "auth-service");
+  instrumentDataSource(app.get(DataSource), metrics);
   installTelemetryShutdown(app);
 
   app.use(cookieParser());

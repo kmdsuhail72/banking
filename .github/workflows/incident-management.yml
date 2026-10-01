@@ -1,0 +1,36 @@
+name: Incident management
+on:
+  pull_request:
+    paths: ['apps/incident-management/**', 'infrastructure/observability/**', 'docker-compose.incidents.yml', '.github/workflows/incident-management.yml']
+  push:
+    paths: ['apps/incident-management/**', 'infrastructure/observability/**', 'docker-compose.incidents.yml', '.github/workflows/incident-management.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/incident-management/package-lock.json
+      - run: npm ci --ignore-scripts
+        working-directory: apps/incident-management
+      - run: npm run build
+        working-directory: apps/incident-management
+      - run: npm test
+        working-directory: apps/incident-management
+      - run: node --test infrastructure/observability/slo/*.test.mjs
+      - run: node apps/incident-management/scripts/init-secrets.mjs
+      - run: docker compose -f docker-compose.observability.yml -f docker-compose.incidents.yml config --quiet
+      - run: docker build -t banking-incidents:test apps/incident-management
+      - name: Validate Prometheus SLO rules
+        run: docker run --rm --entrypoint promtool -v "$PWD/infrastructure/observability:/config:ro" prom/prometheus:v3.2.1 check rules /config/prometheus/rules/banking-slo.yaml
+      - name: Validate Alertmanager incident routing
+        run: docker run --rm --user 0:0 --entrypoint amtool -v "$PWD/infrastructure/observability/slo/incident-alertmanager.yaml:/config.yaml:ro" -v "$PWD/.local/incidents/webhook-token:/run/secrets/webhook-token:ro" prom/alertmanager:v0.28.1 check-config /config.yaml
+
+      - name: Verify error budget calculations
+        run: docker run --rm --entrypoint promtool -v "$PWD/infrastructure/observability:/config:ro" prom/prometheus:v3.2.1 test rules /config/slo/rules.test.yaml

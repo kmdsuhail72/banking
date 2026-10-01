@@ -1,0 +1,1284 @@
+{
+  "groups": [
+    {
+      "name": "banking.slo",
+      "interval": "30s",
+      "rules": [
+        {
+          "record": "banking:slo_events:5m",
+          "expr": "sum by (service) (increase(banking_sli_probe_total{job=\"banking-slo-probes\"}[5m]))",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:5m",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_probe_total{job=\"banking-slo-probes\"}[5m]))) - (sum by (service) (increase(banking_sli_probe_good_total{job=\"banking-slo-probes\"}[5m]))), 0)",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:5m",
+          "expr": "banking:slo_bad_events:5m{slo=\"availability\"} / banking:slo_events:5m{slo=\"availability\"}",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:5m",
+          "expr": "banking:slo_error_ratio:5m{slo=\"availability\"} / 0.0010000",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_events:30m",
+          "expr": "sum by (service) (increase(banking_sli_probe_total{job=\"banking-slo-probes\"}[30m]))",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30m",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_probe_total{job=\"banking-slo-probes\"}[30m]))) - (sum by (service) (increase(banking_sli_probe_good_total{job=\"banking-slo-probes\"}[30m]))), 0)",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30m",
+          "expr": "banking:slo_bad_events:30m{slo=\"availability\"} / banking:slo_events:30m{slo=\"availability\"}",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30m",
+          "expr": "banking:slo_error_ratio:30m{slo=\"availability\"} / 0.0010000",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_events:1h",
+          "expr": "sum by (service) (increase(banking_sli_probe_total{job=\"banking-slo-probes\"}[1h]))",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:1h",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_probe_total{job=\"banking-slo-probes\"}[1h]))) - (sum by (service) (increase(banking_sli_probe_good_total{job=\"banking-slo-probes\"}[1h]))), 0)",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:1h",
+          "expr": "banking:slo_bad_events:1h{slo=\"availability\"} / banking:slo_events:1h{slo=\"availability\"}",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:1h",
+          "expr": "banking:slo_error_ratio:1h{slo=\"availability\"} / 0.0010000",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_events:6h",
+          "expr": "sum by (service) (increase(banking_sli_probe_total{job=\"banking-slo-probes\"}[6h]))",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:6h",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_probe_total{job=\"banking-slo-probes\"}[6h]))) - (sum by (service) (increase(banking_sli_probe_good_total{job=\"banking-slo-probes\"}[6h]))), 0)",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:6h",
+          "expr": "banking:slo_bad_events:6h{slo=\"availability\"} / banking:slo_events:6h{slo=\"availability\"}",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:6h",
+          "expr": "banking:slo_error_ratio:6h{slo=\"availability\"} / 0.0010000",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_events:30d",
+          "expr": "sum by (service) (increase(banking_sli_probe_total{job=\"banking-slo-probes\"}[30d]))",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30d",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_probe_total{job=\"banking-slo-probes\"}[30d]))) - (sum by (service) (increase(banking_sli_probe_good_total{job=\"banking-slo-probes\"}[30d]))), 0)",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30d",
+          "expr": "banking:slo_bad_events:30d{slo=\"availability\"} / banking:slo_events:30d{slo=\"availability\"}",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30d",
+          "expr": "banking:slo_error_ratio:30d{slo=\"availability\"} / 0.0010000",
+          "labels": {
+            "slo": "availability"
+          }
+        },
+        {
+          "record": "banking:slo_budget_allowed:30d",
+          "expr": "banking:slo_events:30d{slo=\"availability\"} * 0.0010000"
+        },
+        {
+          "record": "banking:slo_events:5m",
+          "expr": "sum by (service) (increase(banking_sli_requests_total{job=\"banking\",service=\"api-gateway\"}[5m]))",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:5m",
+          "expr": "sum by (service) (increase(banking_sli_requests_total{job=\"banking\",service=\"api-gateway\",outcome=\"technical_failure\"}[5m]))",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:5m",
+          "expr": "banking:slo_bad_events:5m{slo=\"requests\"} / banking:slo_events:5m{slo=\"requests\"}",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:5m",
+          "expr": "banking:slo_error_ratio:5m{slo=\"requests\"} / 0.0010000",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_events:30m",
+          "expr": "sum by (service) (increase(banking_sli_requests_total{job=\"banking\",service=\"api-gateway\"}[30m]))",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30m",
+          "expr": "sum by (service) (increase(banking_sli_requests_total{job=\"banking\",service=\"api-gateway\",outcome=\"technical_failure\"}[30m]))",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30m",
+          "expr": "banking:slo_bad_events:30m{slo=\"requests\"} / banking:slo_events:30m{slo=\"requests\"}",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30m",
+          "expr": "banking:slo_error_ratio:30m{slo=\"requests\"} / 0.0010000",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_events:1h",
+          "expr": "sum by (service) (increase(banking_sli_requests_total{job=\"banking\",service=\"api-gateway\"}[1h]))",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:1h",
+          "expr": "sum by (service) (increase(banking_sli_requests_total{job=\"banking\",service=\"api-gateway\",outcome=\"technical_failure\"}[1h]))",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:1h",
+          "expr": "banking:slo_bad_events:1h{slo=\"requests\"} / banking:slo_events:1h{slo=\"requests\"}",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:1h",
+          "expr": "banking:slo_error_ratio:1h{slo=\"requests\"} / 0.0010000",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_events:6h",
+          "expr": "sum by (service) (increase(banking_sli_requests_total{job=\"banking\",service=\"api-gateway\"}[6h]))",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:6h",
+          "expr": "sum by (service) (increase(banking_sli_requests_total{job=\"banking\",service=\"api-gateway\",outcome=\"technical_failure\"}[6h]))",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:6h",
+          "expr": "banking:slo_bad_events:6h{slo=\"requests\"} / banking:slo_events:6h{slo=\"requests\"}",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:6h",
+          "expr": "banking:slo_error_ratio:6h{slo=\"requests\"} / 0.0010000",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_events:30d",
+          "expr": "sum by (service) (increase(banking_sli_requests_total{job=\"banking\",service=\"api-gateway\"}[30d]))",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30d",
+          "expr": "sum by (service) (increase(banking_sli_requests_total{job=\"banking\",service=\"api-gateway\",outcome=\"technical_failure\"}[30d]))",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30d",
+          "expr": "banking:slo_bad_events:30d{slo=\"requests\"} / banking:slo_events:30d{slo=\"requests\"}",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30d",
+          "expr": "banking:slo_error_ratio:30d{slo=\"requests\"} / 0.0010000",
+          "labels": {
+            "slo": "requests"
+          }
+        },
+        {
+          "record": "banking:slo_budget_allowed:30d",
+          "expr": "banking:slo_events:30d{slo=\"requests\"} * 0.0010000"
+        },
+        {
+          "record": "banking:slo_events:5m",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"transaction\",outcome!=\"business_rejection\"}[5m]))",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:5m",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"transaction\",outcome!=\"business_rejection\",outcome=\"technical_failure\"}[5m]))",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:5m",
+          "expr": "banking:slo_bad_events:5m{slo=\"transactions\"} / banking:slo_events:5m{slo=\"transactions\"}",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:5m",
+          "expr": "banking:slo_error_ratio:5m{slo=\"transactions\"} / 0.0005000",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_events:30m",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"transaction\",outcome!=\"business_rejection\"}[30m]))",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30m",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"transaction\",outcome!=\"business_rejection\",outcome=\"technical_failure\"}[30m]))",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30m",
+          "expr": "banking:slo_bad_events:30m{slo=\"transactions\"} / banking:slo_events:30m{slo=\"transactions\"}",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30m",
+          "expr": "banking:slo_error_ratio:30m{slo=\"transactions\"} / 0.0005000",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_events:1h",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"transaction\",outcome!=\"business_rejection\"}[1h]))",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:1h",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"transaction\",outcome!=\"business_rejection\",outcome=\"technical_failure\"}[1h]))",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:1h",
+          "expr": "banking:slo_bad_events:1h{slo=\"transactions\"} / banking:slo_events:1h{slo=\"transactions\"}",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:1h",
+          "expr": "banking:slo_error_ratio:1h{slo=\"transactions\"} / 0.0005000",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_events:6h",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"transaction\",outcome!=\"business_rejection\"}[6h]))",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:6h",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"transaction\",outcome!=\"business_rejection\",outcome=\"technical_failure\"}[6h]))",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:6h",
+          "expr": "banking:slo_bad_events:6h{slo=\"transactions\"} / banking:slo_events:6h{slo=\"transactions\"}",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:6h",
+          "expr": "banking:slo_error_ratio:6h{slo=\"transactions\"} / 0.0005000",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_events:30d",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"transaction\",outcome!=\"business_rejection\"}[30d]))",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30d",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"transaction\",outcome!=\"business_rejection\",outcome=\"technical_failure\"}[30d]))",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30d",
+          "expr": "banking:slo_bad_events:30d{slo=\"transactions\"} / banking:slo_events:30d{slo=\"transactions\"}",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30d",
+          "expr": "banking:slo_error_ratio:30d{slo=\"transactions\"} / 0.0005000",
+          "labels": {
+            "slo": "transactions"
+          }
+        },
+        {
+          "record": "banking:slo_budget_allowed:30d",
+          "expr": "banking:slo_events:30d{slo=\"transactions\"} * 0.0005000"
+        },
+        {
+          "record": "banking:slo_events:5m",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"authentication\",outcome!=\"business_rejection\"}[5m]))",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:5m",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"authentication\",outcome!=\"business_rejection\",outcome=\"technical_failure\"}[5m]))",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:5m",
+          "expr": "banking:slo_bad_events:5m{slo=\"authentication\"} / banking:slo_events:5m{slo=\"authentication\"}",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:5m",
+          "expr": "banking:slo_error_ratio:5m{slo=\"authentication\"} / 0.0010000",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_events:30m",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"authentication\",outcome!=\"business_rejection\"}[30m]))",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30m",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"authentication\",outcome!=\"business_rejection\",outcome=\"technical_failure\"}[30m]))",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30m",
+          "expr": "banking:slo_bad_events:30m{slo=\"authentication\"} / banking:slo_events:30m{slo=\"authentication\"}",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30m",
+          "expr": "banking:slo_error_ratio:30m{slo=\"authentication\"} / 0.0010000",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_events:1h",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"authentication\",outcome!=\"business_rejection\"}[1h]))",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:1h",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"authentication\",outcome!=\"business_rejection\",outcome=\"technical_failure\"}[1h]))",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:1h",
+          "expr": "banking:slo_bad_events:1h{slo=\"authentication\"} / banking:slo_events:1h{slo=\"authentication\"}",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:1h",
+          "expr": "banking:slo_error_ratio:1h{slo=\"authentication\"} / 0.0010000",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_events:6h",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"authentication\",outcome!=\"business_rejection\"}[6h]))",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:6h",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"authentication\",outcome!=\"business_rejection\",outcome=\"technical_failure\"}[6h]))",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:6h",
+          "expr": "banking:slo_bad_events:6h{slo=\"authentication\"} / banking:slo_events:6h{slo=\"authentication\"}",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:6h",
+          "expr": "banking:slo_error_ratio:6h{slo=\"authentication\"} / 0.0010000",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_events:30d",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"authentication\",outcome!=\"business_rejection\"}[30d]))",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30d",
+          "expr": "sum by (service) (increase(banking_sli_operations_total{job=\"banking\",kind=\"authentication\",outcome!=\"business_rejection\",outcome=\"technical_failure\"}[30d]))",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30d",
+          "expr": "banking:slo_bad_events:30d{slo=\"authentication\"} / banking:slo_events:30d{slo=\"authentication\"}",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30d",
+          "expr": "banking:slo_error_ratio:30d{slo=\"authentication\"} / 0.0010000",
+          "labels": {
+            "slo": "authentication"
+          }
+        },
+        {
+          "record": "banking:slo_budget_allowed:30d",
+          "expr": "banking:slo_events:30d{slo=\"authentication\"} * 0.0010000"
+        },
+        {
+          "record": "banking:slo_events:5m",
+          "expr": "sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[5m]))",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:5m",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[5m]))) - (sum by (service) (increase(banking_sli_api_duration_seconds_bucket{job=\"banking\",service=\"api-gateway\",le=~\"0.3\"}[5m]))), 0)",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:5m",
+          "expr": "banking:slo_bad_events:5m{slo=\"api_p95\"} / banking:slo_events:5m{slo=\"api_p95\"}",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:5m",
+          "expr": "banking:slo_error_ratio:5m{slo=\"api_p95\"} / 0.0500000",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_events:30m",
+          "expr": "sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[30m]))",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30m",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[30m]))) - (sum by (service) (increase(banking_sli_api_duration_seconds_bucket{job=\"banking\",service=\"api-gateway\",le=~\"0.3\"}[30m]))), 0)",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30m",
+          "expr": "banking:slo_bad_events:30m{slo=\"api_p95\"} / banking:slo_events:30m{slo=\"api_p95\"}",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30m",
+          "expr": "banking:slo_error_ratio:30m{slo=\"api_p95\"} / 0.0500000",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_events:1h",
+          "expr": "sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[1h]))",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:1h",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[1h]))) - (sum by (service) (increase(banking_sli_api_duration_seconds_bucket{job=\"banking\",service=\"api-gateway\",le=~\"0.3\"}[1h]))), 0)",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:1h",
+          "expr": "banking:slo_bad_events:1h{slo=\"api_p95\"} / banking:slo_events:1h{slo=\"api_p95\"}",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:1h",
+          "expr": "banking:slo_error_ratio:1h{slo=\"api_p95\"} / 0.0500000",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_events:6h",
+          "expr": "sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[6h]))",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:6h",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[6h]))) - (sum by (service) (increase(banking_sli_api_duration_seconds_bucket{job=\"banking\",service=\"api-gateway\",le=~\"0.3\"}[6h]))), 0)",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:6h",
+          "expr": "banking:slo_bad_events:6h{slo=\"api_p95\"} / banking:slo_events:6h{slo=\"api_p95\"}",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:6h",
+          "expr": "banking:slo_error_ratio:6h{slo=\"api_p95\"} / 0.0500000",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_events:30d",
+          "expr": "sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[30d]))",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30d",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[30d]))) - (sum by (service) (increase(banking_sli_api_duration_seconds_bucket{job=\"banking\",service=\"api-gateway\",le=~\"0.3\"}[30d]))), 0)",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30d",
+          "expr": "banking:slo_bad_events:30d{slo=\"api_p95\"} / banking:slo_events:30d{slo=\"api_p95\"}",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30d",
+          "expr": "banking:slo_error_ratio:30d{slo=\"api_p95\"} / 0.0500000",
+          "labels": {
+            "slo": "api_p95"
+          }
+        },
+        {
+          "record": "banking:slo_budget_allowed:30d",
+          "expr": "banking:slo_events:30d{slo=\"api_p95\"} * 0.0500000"
+        },
+        {
+          "record": "banking:slo_events:5m",
+          "expr": "sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[5m]))",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:5m",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[5m]))) - (sum by (service) (increase(banking_sli_api_duration_seconds_bucket{job=\"banking\",service=\"api-gateway\",le=~\"1|1.0\"}[5m]))), 0)",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:5m",
+          "expr": "banking:slo_bad_events:5m{slo=\"api_p99\"} / banking:slo_events:5m{slo=\"api_p99\"}",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:5m",
+          "expr": "banking:slo_error_ratio:5m{slo=\"api_p99\"} / 0.0100000",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_events:30m",
+          "expr": "sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[30m]))",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30m",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[30m]))) - (sum by (service) (increase(banking_sli_api_duration_seconds_bucket{job=\"banking\",service=\"api-gateway\",le=~\"1|1.0\"}[30m]))), 0)",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30m",
+          "expr": "banking:slo_bad_events:30m{slo=\"api_p99\"} / banking:slo_events:30m{slo=\"api_p99\"}",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30m",
+          "expr": "banking:slo_error_ratio:30m{slo=\"api_p99\"} / 0.0100000",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_events:1h",
+          "expr": "sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[1h]))",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:1h",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[1h]))) - (sum by (service) (increase(banking_sli_api_duration_seconds_bucket{job=\"banking\",service=\"api-gateway\",le=~\"1|1.0\"}[1h]))), 0)",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:1h",
+          "expr": "banking:slo_bad_events:1h{slo=\"api_p99\"} / banking:slo_events:1h{slo=\"api_p99\"}",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:1h",
+          "expr": "banking:slo_error_ratio:1h{slo=\"api_p99\"} / 0.0100000",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_events:6h",
+          "expr": "sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[6h]))",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:6h",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[6h]))) - (sum by (service) (increase(banking_sli_api_duration_seconds_bucket{job=\"banking\",service=\"api-gateway\",le=~\"1|1.0\"}[6h]))), 0)",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:6h",
+          "expr": "banking:slo_bad_events:6h{slo=\"api_p99\"} / banking:slo_events:6h{slo=\"api_p99\"}",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:6h",
+          "expr": "banking:slo_error_ratio:6h{slo=\"api_p99\"} / 0.0100000",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_events:30d",
+          "expr": "sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[30d]))",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30d",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_api_duration_seconds_count{job=\"banking\",service=\"api-gateway\"}[30d]))) - (sum by (service) (increase(banking_sli_api_duration_seconds_bucket{job=\"banking\",service=\"api-gateway\",le=~\"1|1.0\"}[30d]))), 0)",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30d",
+          "expr": "banking:slo_bad_events:30d{slo=\"api_p99\"} / banking:slo_events:30d{slo=\"api_p99\"}",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30d",
+          "expr": "banking:slo_error_ratio:30d{slo=\"api_p99\"} / 0.0100000",
+          "labels": {
+            "slo": "api_p99"
+          }
+        },
+        {
+          "record": "banking:slo_budget_allowed:30d",
+          "expr": "banking:slo_events:30d{slo=\"api_p99\"} * 0.0100000"
+        },
+        {
+          "record": "banking:slo_events:5m",
+          "expr": "sum by (service) (increase(banking_db_query_duration_seconds_count{job=\"banking\"}[5m]))",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:5m",
+          "expr": "clamp_min((sum by (service) (increase(banking_db_query_duration_seconds_count{job=\"banking\"}[5m]))) - (sum by (service) (increase(banking_db_query_duration_seconds_bucket{job=\"banking\",le=~\"0.1\"}[5m]))), 0)",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:5m",
+          "expr": "banking:slo_bad_events:5m{slo=\"database\"} / banking:slo_events:5m{slo=\"database\"}",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:5m",
+          "expr": "banking:slo_error_ratio:5m{slo=\"database\"} / 0.0500000",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_events:30m",
+          "expr": "sum by (service) (increase(banking_db_query_duration_seconds_count{job=\"banking\"}[30m]))",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30m",
+          "expr": "clamp_min((sum by (service) (increase(banking_db_query_duration_seconds_count{job=\"banking\"}[30m]))) - (sum by (service) (increase(banking_db_query_duration_seconds_bucket{job=\"banking\",le=~\"0.1\"}[30m]))), 0)",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30m",
+          "expr": "banking:slo_bad_events:30m{slo=\"database\"} / banking:slo_events:30m{slo=\"database\"}",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30m",
+          "expr": "banking:slo_error_ratio:30m{slo=\"database\"} / 0.0500000",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_events:1h",
+          "expr": "sum by (service) (increase(banking_db_query_duration_seconds_count{job=\"banking\"}[1h]))",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:1h",
+          "expr": "clamp_min((sum by (service) (increase(banking_db_query_duration_seconds_count{job=\"banking\"}[1h]))) - (sum by (service) (increase(banking_db_query_duration_seconds_bucket{job=\"banking\",le=~\"0.1\"}[1h]))), 0)",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:1h",
+          "expr": "banking:slo_bad_events:1h{slo=\"database\"} / banking:slo_events:1h{slo=\"database\"}",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:1h",
+          "expr": "banking:slo_error_ratio:1h{slo=\"database\"} / 0.0500000",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_events:6h",
+          "expr": "sum by (service) (increase(banking_db_query_duration_seconds_count{job=\"banking\"}[6h]))",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:6h",
+          "expr": "clamp_min((sum by (service) (increase(banking_db_query_duration_seconds_count{job=\"banking\"}[6h]))) - (sum by (service) (increase(banking_db_query_duration_seconds_bucket{job=\"banking\",le=~\"0.1\"}[6h]))), 0)",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:6h",
+          "expr": "banking:slo_bad_events:6h{slo=\"database\"} / banking:slo_events:6h{slo=\"database\"}",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:6h",
+          "expr": "banking:slo_error_ratio:6h{slo=\"database\"} / 0.0500000",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_events:30d",
+          "expr": "sum by (service) (increase(banking_db_query_duration_seconds_count{job=\"banking\"}[30d]))",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30d",
+          "expr": "clamp_min((sum by (service) (increase(banking_db_query_duration_seconds_count{job=\"banking\"}[30d]))) - (sum by (service) (increase(banking_db_query_duration_seconds_bucket{job=\"banking\",le=~\"0.1\"}[30d]))), 0)",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30d",
+          "expr": "banking:slo_bad_events:30d{slo=\"database\"} / banking:slo_events:30d{slo=\"database\"}",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30d",
+          "expr": "banking:slo_error_ratio:30d{slo=\"database\"} / 0.0500000",
+          "labels": {
+            "slo": "database"
+          }
+        },
+        {
+          "record": "banking:slo_budget_allowed:30d",
+          "expr": "banking:slo_events:30d{slo=\"database\"} * 0.0500000"
+        },
+        {
+          "record": "banking:slo_events:5m",
+          "expr": "sum by (service) (increase(banking_sli_recovery_seconds_count{job=\"banking-slo-probes\"}[5m]))",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:5m",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_recovery_seconds_count{job=\"banking-slo-probes\"}[5m]))) - (sum by (service) (increase(banking_sli_recovery_seconds_bucket{job=\"banking-slo-probes\",le=~\"900|900.0\"}[5m]))), 0)",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:5m",
+          "expr": "banking:slo_bad_events:5m{slo=\"recovery\"} / banking:slo_events:5m{slo=\"recovery\"}",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:5m",
+          "expr": "banking:slo_error_ratio:5m{slo=\"recovery\"} / 0.1000000",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_events:30m",
+          "expr": "sum by (service) (increase(banking_sli_recovery_seconds_count{job=\"banking-slo-probes\"}[30m]))",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30m",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_recovery_seconds_count{job=\"banking-slo-probes\"}[30m]))) - (sum by (service) (increase(banking_sli_recovery_seconds_bucket{job=\"banking-slo-probes\",le=~\"900|900.0\"}[30m]))), 0)",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30m",
+          "expr": "banking:slo_bad_events:30m{slo=\"recovery\"} / banking:slo_events:30m{slo=\"recovery\"}",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30m",
+          "expr": "banking:slo_error_ratio:30m{slo=\"recovery\"} / 0.1000000",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_events:1h",
+          "expr": "sum by (service) (increase(banking_sli_recovery_seconds_count{job=\"banking-slo-probes\"}[1h]))",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:1h",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_recovery_seconds_count{job=\"banking-slo-probes\"}[1h]))) - (sum by (service) (increase(banking_sli_recovery_seconds_bucket{job=\"banking-slo-probes\",le=~\"900|900.0\"}[1h]))), 0)",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:1h",
+          "expr": "banking:slo_bad_events:1h{slo=\"recovery\"} / banking:slo_events:1h{slo=\"recovery\"}",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:1h",
+          "expr": "banking:slo_error_ratio:1h{slo=\"recovery\"} / 0.1000000",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_events:6h",
+          "expr": "sum by (service) (increase(banking_sli_recovery_seconds_count{job=\"banking-slo-probes\"}[6h]))",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:6h",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_recovery_seconds_count{job=\"banking-slo-probes\"}[6h]))) - (sum by (service) (increase(banking_sli_recovery_seconds_bucket{job=\"banking-slo-probes\",le=~\"900|900.0\"}[6h]))), 0)",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:6h",
+          "expr": "banking:slo_bad_events:6h{slo=\"recovery\"} / banking:slo_events:6h{slo=\"recovery\"}",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:6h",
+          "expr": "banking:slo_error_ratio:6h{slo=\"recovery\"} / 0.1000000",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_events:30d",
+          "expr": "sum by (service) (increase(banking_sli_recovery_seconds_count{job=\"banking-slo-probes\"}[30d]))",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_bad_events:30d",
+          "expr": "clamp_min((sum by (service) (increase(banking_sli_recovery_seconds_count{job=\"banking-slo-probes\"}[30d]))) - (sum by (service) (increase(banking_sli_recovery_seconds_bucket{job=\"banking-slo-probes\",le=~\"900|900.0\"}[30d]))), 0)",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_error_ratio:30d",
+          "expr": "banking:slo_bad_events:30d{slo=\"recovery\"} / banking:slo_events:30d{slo=\"recovery\"}",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_burn_rate:30d",
+          "expr": "banking:slo_error_ratio:30d{slo=\"recovery\"} / 0.1000000",
+          "labels": {
+            "slo": "recovery"
+          }
+        },
+        {
+          "record": "banking:slo_budget_allowed:30d",
+          "expr": "banking:slo_events:30d{slo=\"recovery\"} * 0.1000000"
+        },
+        {
+          "record": "banking:slo_budget_remaining:30d",
+          "expr": "banking:slo_budget_allowed:30d - banking:slo_bad_events:30d"
+        },
+        {
+          "record": "banking:slo_budget_remaining_ratio:30d",
+          "expr": "1 - banking:slo_burn_rate:30d"
+        },
+        {
+          "record": "banking:slo_monitoring_coverage:30d",
+          "expr": "count_over_time(up{job=~\"banking|banking-slo-probes\"}[30d]) / 259200"
+        }
+      ]
+    },
+    {
+      "name": "banking.slo.alerts",
+      "interval": "30s",
+      "rules": [
+        {
+          "alert": "BankingSloFastBurn",
+          "expr": "banking:slo_burn_rate:1h > 14.4 and banking:slo_burn_rate:5m > 14.4",
+          "for": "2m",
+          "labels": {
+            "severity": "critical",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "BankingSloFastBurn on {{ $labels.service }} {{ $labels.slo }}",
+            "description": "Inspect the SLO dashboard and follow infrastructure/observability/SLO.md deployment policy."
+          }
+        },
+        {
+          "alert": "BankingSloSlowBurn",
+          "expr": "banking:slo_burn_rate:6h > 6 and banking:slo_burn_rate:30m > 6",
+          "for": "5m",
+          "labels": {
+            "severity": "warning",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "BankingSloSlowBurn on {{ $labels.service }} {{ $labels.slo }}",
+            "description": "Inspect the SLO dashboard and follow infrastructure/observability/SLO.md deployment policy."
+          }
+        },
+        {
+          "alert": "BankingSloBudgetExhausted",
+          "expr": "banking:slo_budget_remaining_ratio:30d <= 0",
+          "for": "5m",
+          "labels": {
+            "severity": "critical",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "BankingSloBudgetExhausted on {{ $labels.service }} {{ $labels.slo }}",
+            "description": "Inspect the SLO dashboard and follow infrastructure/observability/SLO.md deployment policy."
+          }
+        },
+        {
+          "alert": "BankingSloBudgetLow",
+          "expr": "banking:slo_budget_remaining_ratio:30d < 0.25",
+          "for": "15m",
+          "labels": {
+            "severity": "warning",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "BankingSloBudgetLow on {{ $labels.service }} {{ $labels.slo }}",
+            "description": "Inspect the SLO dashboard and follow infrastructure/observability/SLO.md deployment policy."
+          }
+        },
+        {
+          "alert": "BankingSloRecoveryOverdue",
+          "expr": "banking_sli_outage_age_seconds > 900",
+          "for": "1m",
+          "labels": {
+            "severity": "critical",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "BankingSloRecoveryOverdue on {{ $labels.service }} {{ $labels.slo }}",
+            "description": "Inspect the SLO dashboard and follow infrastructure/observability/SLO.md deployment policy."
+          }
+        },
+        {
+          "alert": "BankingSloObserverMissing",
+          "expr": "absent(up{job=\"banking-slo-probes\"}) or up{job=\"banking-slo-probes\"} == 0 or time() - banking_sli_probe_last_timestamp_seconds > 45",
+          "for": "1m",
+          "labels": {
+            "severity": "critical",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "BankingSloObserverMissing on {{ $labels.service }} {{ $labels.slo }}",
+            "description": "Inspect the SLO dashboard and follow infrastructure/observability/SLO.md deployment policy."
+          }
+        },
+        {
+          "alert": "BankingSloTransactionTelemetryMissing",
+          "expr": "absent(banking_sli_operations_total{kind=\"transaction\",service=\"transaction-service\"})",
+          "for": "15m",
+          "labels": {
+            "severity": "warning",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "BankingSloTransactionTelemetryMissing on {{ $labels.service }} {{ $labels.slo }}",
+            "description": "Inspect the SLO dashboard and follow infrastructure/observability/SLO.md deployment policy."
+          }
+        },
+        {
+          "alert": "BankingSloAuthenticationTelemetryMissing",
+          "expr": "absent(banking_sli_operations_total{kind=\"authentication\",service=\"auth-service\"})",
+          "for": "15m",
+          "labels": {
+            "severity": "warning",
+            "team": "platform"
+          },
+          "annotations": {
+            "summary": "BankingSloAuthenticationTelemetryMissing on {{ $labels.service }} {{ $labels.slo }}",
+            "description": "Inspect the SLO dashboard and follow infrastructure/observability/SLO.md deployment policy."
+          }
+        }
+      ]
+    }
+  ]
+}
