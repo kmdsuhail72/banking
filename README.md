@@ -219,6 +219,40 @@ bootstrap prerequisites, preview commands, and rollback instructions.
 
 ## SRE operations
 
+### Grafana SLO dashboard — screenshot reference
+
+The screenshot shared on **5 October 2026** shows the **Banking SLOs and error budgets** dashboard at [http://localhost:13001/d/banking-slo](http://localhost:13001/d/banking-slo), with **Last 5 minutes**, **UTC**, and a **30-second refresh** selected.
+
+| Panel visible in the screenshot | Observed value | Interpretation |
+| --- | --- | --- |
+| Critical accounts and transactions availability | 0% | The configured probes are failing; this does not indicate healthy banking workflows. Protected endpoints require suitable probe credentials, and unfinished backend routes remain a known limitation. |
+| Authentication technical success (30d) | 100% | The technical-success metric reports success for the available samples. A newly started local stack does not provide 30 days of history, and this metric does not mean every login attempt succeeds. |
+| Transactions technical success (30d) | No data | The query has no usable transaction-operation samples. This is unknown coverage, not a 0% or 100% success rate. |
+| API p50 (5m) | Approximately 2.6 ms | Median latency for the requests represented by the metric. |
+| API p95 (5m) | Approximately 5 ms | 95th-percentile latency for the requests represented by the metric. |
+
+These are observations from the supplied screenshot, not production SLA guarantees. The screenshot is referenced here in text; its image file is not currently stored in the repository.
+
+Local monitoring links:
+
+- [Grafana](http://localhost:13001)
+- [Prometheus targets](http://localhost:9090/targets)
+- [Incident dashboard](http://localhost:13001/d/banking-incidents)
+- [Incident command interface](http://localhost:4020)
+
+Start the monitoring and incident services together so the incident dashboard receives metrics:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.incidents.yml up -d
+```
+
+For first-time incident setup, generate credentials with `node apps/incident-management/scripts/init-secrets.mjs` before starting Compose. The generator refuses to overwrite existing credentials. See [local runtime verification and known issues](docs/local-runtime-check.md) for application startup and verified coverage.
+
+### Guides
+
+- [Centralized logging: Alloy, Loki, safe JSON, LogQL and deployment](infrastructure/logging/README.md)
+- [Banking Grafana dashboard: JSON, panel queries and setup](infrastructure/observability/grafana/banking-operations/README.md)
+- [Node backend metrics, Kubernetes exporters and Prometheus validation](infrastructure/observability/backend/README.md)
 - [Incident management: implementation and deployment](apps/incident-management/README.md)
 - [SLIs, SLOs, PromQL and error budget deployment policy](infrastructure/observability/SLO.md)
 - [Controlled Kubernetes chaos: synthetic lab, experiments and rollback](infrastructure/chaos/README.md)
