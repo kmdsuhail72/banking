@@ -1,0 +1,53 @@
+{
+  "apiVersion": "chaos-mesh.org/v1alpha1",
+  "kind": "NetworkChaos",
+  "metadata": {
+    "name": "packet-loss",
+    "namespace": "banking-chaos",
+    "labels": {
+      "chaos.banking.io/managed": "true"
+    }
+  },
+  "spec": {
+    "mode": "one",
+    "selector": {
+      "namespaces": [
+        "banking-chaos"
+      ],
+      "labelSelectors": {
+        "app": "banking-api",
+        "chaos.banking.io/eligible": "true",
+        "chaos.banking.io/data": "synthetic"
+      },
+      "pods": {
+        "banking-chaos": [
+          "RUNNER_SELECTS_ONE_POD"
+        ]
+      }
+    },
+    "action": "loss",
+    "direction": "to",
+    "target": {
+      "mode": "all",
+      "selector": {
+        "namespaces": [
+          "banking-chaos"
+        ],
+        "labelSelectors": {
+          "app": "dependency-stub",
+          "chaos.banking.io/data": "synthetic"
+        },
+        "pods": {
+          "banking-chaos": [
+            "RUNNER_SELECTS_DEPENDENCY_POD"
+          ]
+        }
+      }
+    },
+    "loss": {
+      "loss": "5",
+      "correlation": "0"
+    },
+    "duration": "60s"
+  }
+}

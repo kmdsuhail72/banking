@@ -1,4 +1,17 @@
 services:
+  slo-observer:
+    image: node:22-alpine
+    command: [node, /app/observer.mjs]
+    environment:
+      SLO_PROBE_TOKEN: ${SLO_PROBE_TOKEN:-}
+    volumes:
+      - ./infrastructure/observability/slo/observer.mjs:/app/observer.mjs:ro
+      - ./infrastructure/observability/slo/probes.json:/config/probes.json:ro
+      - slo_observer_data:/data
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.123.0
     command: [--config=/etc/otelcol/config.yaml]
@@ -25,7 +38,7 @@ services:
     image: prom/prometheus:v3.2.1
     command:
       - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.retention.time=7d
+      - --storage.tsdb.retention.time=35d
       - --web.enable-remote-write-receiver
       - --enable-feature=exemplar-storage
     volumes:
@@ -91,6 +104,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  slo_observer_data:
   prometheus_data:
   alertmanager_data:
   loki_data:

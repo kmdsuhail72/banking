@@ -1,0 +1,39 @@
+{
+  "apiVersion": "chaos-mesh.org/v1alpha1",
+  "kind": "StressChaos",
+  "metadata": {
+    "name": "memory-pressure",
+    "namespace": "banking-chaos",
+    "labels": {
+      "chaos.banking.io/managed": "true"
+    }
+  },
+  "spec": {
+    "mode": "one",
+    "selector": {
+      "namespaces": [
+        "banking-chaos"
+      ],
+      "labelSelectors": {
+        "app": "banking-api",
+        "chaos.banking.io/eligible": "true",
+        "chaos.banking.io/data": "synthetic"
+      },
+      "pods": {
+        "banking-chaos": [
+          "RUNNER_SELECTS_ONE_POD"
+        ]
+      }
+    },
+    "containerNames": [
+      "app"
+    ],
+    "stressors": {
+      "memory": {
+        "workers": 1,
+        "size": "64MB"
+      }
+    },
+    "duration": "45s"
+  }
+}

@@ -50,3 +50,6 @@ docker-data/
 # Legacy local frontend
 banking-frontend/
 
+
+# Local SRE credentials, dependency cache and observer state
+.local/

@@ -25,3 +25,5 @@ export class HealthIndicator {
     };
   }
 }
+
+export * from "./slo";

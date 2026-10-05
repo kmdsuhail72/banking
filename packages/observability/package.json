@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w",
-    "test": "tsc && node --test tests/*.test.cjs"
+    "test": "pnpm --filter @banking/shared-types run build --build --force && tsc --build --force && node --test tests/*.test.cjs"
   },
   "dependencies": {
     "@banking/shared-types": "workspace:*",

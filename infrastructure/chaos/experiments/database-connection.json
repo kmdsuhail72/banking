@@ -1,0 +1,49 @@
+{
+  "apiVersion": "chaos-mesh.org/v1alpha1",
+  "kind": "NetworkChaos",
+  "metadata": {
+    "name": "database-connection",
+    "namespace": "banking-chaos",
+    "labels": {
+      "chaos.banking.io/managed": "true"
+    }
+  },
+  "spec": {
+    "mode": "one",
+    "selector": {
+      "namespaces": [
+        "banking-chaos"
+      ],
+      "labelSelectors": {
+        "app": "banking-api",
+        "chaos.banking.io/eligible": "true",
+        "chaos.banking.io/data": "synthetic"
+      },
+      "pods": {
+        "banking-chaos": [
+          "RUNNER_SELECTS_ONE_POD"
+        ]
+      }
+    },
+    "action": "partition",
+    "direction": "to",
+    "target": {
+      "mode": "all",
+      "selector": {
+        "namespaces": [
+          "banking-chaos"
+        ],
+        "labelSelectors": {
+          "app": "chaos-mongodb",
+          "chaos.banking.io/data": "synthetic"
+        },
+        "pods": {
+          "banking-chaos": [
+            "RUNNER_SELECTS_DEPENDENCY_POD"
+          ]
+        }
+      }
+    },
+    "duration": "45s"
+  }
+}

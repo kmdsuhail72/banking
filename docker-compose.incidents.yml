@@ -1,0 +1,58 @@
+services:
+  incident-mongodb:
+    image: mongo:8.0
+    restart: unless-stopped
+    volumes:
+      - incident_mongodb_data:/data/db
+    healthcheck:
+      test: [CMD, mongosh, --quiet, --eval, "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  incident-management:
+    build: ./apps/incident-management
+    environment:
+      MONGODB_URI: mongodb://incident-mongodb:27017/banking_incidents
+      PUBLIC_ORIGIN: ${INCIDENT_PUBLIC_ORIGIN:-http://localhost:4020}
+      GRAFANA_PUBLIC_URL: ${GRAFANA_PUBLIC_URL:-http://localhost:3001}
+    secrets:
+      - source: incident_operators
+        target: operators.json
+      - source: incident_webhook
+        target: webhook-token
+      - source: incident_metrics
+        target: metrics-token
+    ports:
+      - "127.0.0.1:4020:4020"
+    depends_on:
+      incident-mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+    init: true
+  alertmanager:
+    command: [--config.file=/etc/alertmanager/incidents.yaml, --storage.path=/alertmanager]
+    volumes:
+      - ./infrastructure/observability/slo/incident-alertmanager.yaml:/etc/alertmanager/incidents.yaml:ro
+    secrets:
+      - source: incident_webhook
+        target: webhook-token
+  prometheus:
+    command:
+      - --config.file=/etc/prometheus/incidents.yaml
+      - --storage.tsdb.retention.time=35d
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+    volumes:
+      - ./infrastructure/observability/slo/incident-prometheus.yaml:/etc/prometheus/incidents.yaml:ro
+    secrets:
+      - source: incident_metrics
+        target: metrics-token
+volumes:
+  incident_mongodb_data:
+secrets:
+  incident_operators:
+    file: ./.local/incidents/operators.json
+  incident_webhook:
+    file: ./.local/incidents/webhook-token
+  incident_metrics:
+    file: ./.local/incidents/metrics-token

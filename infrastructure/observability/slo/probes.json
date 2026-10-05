@@ -1,0 +1,4 @@
+[
+  {"service":"critical-accounts", "url":"http://host.docker.internal:3000/api/v1/accounts", "bodyIncludes":"["},
+  {"service":"critical-transactions", "url":"http://host.docker.internal:3000/api/v1/transactions", "bodyIncludes":"data"}
+]

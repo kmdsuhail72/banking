@@ -1,0 +1,56 @@
+{
+  "groups": [
+    {
+      "name": "banking.chaos.nonproduction",
+      "rules": [
+        {
+          "alert": "ChaosLabIntegrityViolation",
+          "expr": "banking_chaos_integrity_violations{namespace=\"banking-chaos\"} > 0",
+          "labels": {
+            "severity": "critical",
+            "environment": "chaos-nonproduction"
+          },
+          "annotations": {
+            "summary": "Stop chaos immediately; synthetic fixture changed"
+          }
+        },
+        {
+          "alert": "ChaosLabIntegrityUnknown",
+          "expr": "absent(banking_chaos_integrity_checked_timestamp_seconds{namespace=\"banking-chaos\"}) or time() - banking_chaos_integrity_checked_timestamp_seconds{namespace=\"banking-chaos\"} > 15",
+          "for": "10s",
+          "labels": {
+            "severity": "critical",
+            "environment": "chaos-nonproduction"
+          },
+          "annotations": {
+            "summary": "Abort experiment; no fresh integrity proof"
+          }
+        },
+        {
+          "alert": "ChaosLabHighErrorRate",
+          "expr": "sum(rate(banking_chaos_http_requests_total{namespace=\"banking-chaos\",outcome=\"technical_failure\"}[1m])) / sum(rate(banking_chaos_http_requests_total{namespace=\"banking-chaos\"}[1m])) > 0.1",
+          "for": "10s",
+          "labels": {
+            "severity": "warning",
+            "environment": "chaos-nonproduction"
+          },
+          "annotations": {
+            "summary": "Lab technical failure ratio exceeds 10%"
+          }
+        },
+        {
+          "alert": "ChaosLabHighLatency",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(banking_chaos_http_duration_seconds_bucket{namespace=\"banking-chaos\"}[1m]))) > 2",
+          "for": "10s",
+          "labels": {
+            "severity": "warning",
+            "environment": "chaos-nonproduction"
+          },
+          "annotations": {
+            "summary": "Lab p99 exceeds 2 seconds"
+          }
+        }
+      ]
+    }
+  ]
+}

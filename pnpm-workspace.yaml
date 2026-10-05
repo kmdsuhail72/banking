@@ -1,5 +1,6 @@
 packages:
   - "apps/*"
+  - "!apps/incident-management" # Standalone npm lockfile and deployment
   - "apps/services/*"
   - "packages/*"
 

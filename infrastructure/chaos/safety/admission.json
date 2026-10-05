@@ -1,0 +1,177 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicy",
+      "metadata": {
+        "name": "banking-chaos-boundary"
+      },
+      "spec": {
+        "failurePolicy": "Fail",
+        "matchConstraints": {
+          "resourceRules": [
+            {
+              "apiGroups": [
+                "chaos-mesh.org"
+              ],
+              "apiVersions": [
+                "*"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE"
+              ],
+              "resources": [
+                "podchaos",
+                "networkchaos",
+                "stresschaos",
+                "httpchaos",
+                "iochaos",
+                "dnschaos",
+                "timechaos",
+                "kernelchaos",
+                "jvmchaos",
+                "physicalmachinechaos",
+                "awschaos",
+                "gcpchaos",
+                "azurechaos",
+                "blockchaos",
+                "workflows",
+                "schedules"
+              ],
+              "scope": "*"
+            }
+          ],
+          "matchPolicy": "Equivalent",
+          "namespaceSelector": {},
+          "objectSelector": {}
+        },
+        "validations": [
+          {
+            "expression": "request.resource.resource in ['podchaos','networkchaos','stresschaos']",
+            "message": "Only approved pod, network and stress fault types are permitted"
+          },
+          {
+            "expression": "object.metadata.namespace == 'banking-chaos' && namespaceObject.metadata.labels['chaos.banking.io/environment'] == 'nonproduction' && namespaceObject.metadata.labels['chaos.banking.io/data'] == 'synthetic'",
+            "message": "Dedicated synthetic namespace required"
+          },
+          {
+            "expression": "object.spec.mode == 'one' && object.spec.selector.namespaces == ['banking-chaos'] && size(object.spec.selector.pods) == 1 && 'banking-chaos' in object.spec.selector.pods && size(object.spec.selector.pods['banking-chaos']) == 1 && object.spec.selector.pods['banking-chaos'][0].startsWith('banking-api-')",
+            "message": "Pin exactly one banking-api pod in the lab"
+          },
+          {
+            "expression": "request.resource.resource == 'podchaos' ? object.spec.action in ['pod-kill','container-kill'] : has(object.spec.duration) && duration(object.spec.duration) <= duration('75s') && duration(object.spec.duration) > duration('0s')",
+            "message": "Only one-shot kills or faults lasting at most 75 seconds"
+          },
+          {
+            "expression": "request.resource.resource != 'podchaos' || object.spec.action != 'container-kill' || object.spec.containerNames == ['app']",
+            "message": "Only the application container may be killed"
+          },
+          {
+            "expression": "request.resource.resource != 'networkchaos' || (object.spec.action in ['partition','delay','loss'] && object.spec.direction == 'to' && (!has(object.spec.externalTargets) || size(object.spec.externalTargets) == 0) && object.spec.target.selector.namespaces == ['banking-chaos'] && size(object.spec.target.selector.pods) == 1 && size(object.spec.target.selector.pods['banking-chaos']) >= 1 && size(object.spec.target.selector.pods['banking-chaos']) <= 3 && object.spec.target.selector.pods['banking-chaos'].all(p,p.startsWith('chaos-mongodb-') || p.startsWith('dependency-stub-')))",
+            "message": "Network faults may only affect synthetic DB or dependency pods"
+          },
+          {
+            "expression": "request.resource.resource != 'networkchaos' || object.spec.action != 'delay' || (object.spec.delay.latency == '150ms' && object.spec.delay.jitter == '20ms')",
+            "message": "Approved latency envelope only"
+          },
+          {
+            "expression": "request.resource.resource != 'networkchaos' || object.spec.action != 'loss' || object.spec.loss.loss == '5'",
+            "message": "Packet loss capped at the approved 5%"
+          },
+          {
+            "expression": "request.resource.resource != 'stresschaos' || (object.spec.containerNames == ['app'] && !has(object.spec.stressngStressors) && ((has(object.spec.stressors.cpu) && !has(object.spec.stressors.memory) && object.spec.stressors.cpu.workers == 1 && object.spec.stressors.cpu.load == 80) || (!has(object.spec.stressors.cpu) && has(object.spec.stressors.memory) && object.spec.stressors.memory.workers == 1 && object.spec.stressors.memory.size == '64MB')))",
+            "message": "Stress must stay inside the approved CPU or memory envelope"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "metadata": {
+        "name": "banking-chaos-boundary"
+      },
+      "spec": {
+        "policyName": "banking-chaos-boundary",
+        "validationActions": [
+          "Deny"
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicy",
+      "metadata": {
+        "name": "banking-chaos-load-boundary"
+      },
+      "spec": {
+        "failurePolicy": "Fail",
+        "matchConstraints": {
+          "matchPolicy": "Equivalent",
+          "namespaceSelector": {
+            "matchLabels": {
+              "kubernetes.io/metadata.name": "banking-chaos"
+            }
+          },
+          "objectSelector": {},
+          "resourceRules": [
+            {
+              "apiGroups": [
+                "batch"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE"
+              ],
+              "resources": [
+                "jobs"
+              ],
+              "scope": "*"
+            }
+          ]
+        },
+        "validations": [
+          {
+            "expression": "object.spec.parallelism == 1 && object.spec.completions == 1 && object.spec.backoffLimit == 0 && object.spec.activeDeadlineSeconds <= 210",
+            "message": "Only bounded single-worker load jobs are allowed"
+          },
+          {
+            "expression": "size(object.spec.template.spec.containers) == 1 && (!has(object.spec.template.spec.initContainers) || size(object.spec.template.spec.initContainers) == 0) && object.spec.template.spec.automountServiceAccountToken == false",
+            "message": "One container and no Kubernetes credentials"
+          },
+          {
+            "expression": "object.spec.template.spec.containers[0].image == 'node:22.14.0-alpine' && object.spec.template.spec.containers[0].command in [['node','/lab/load.cjs','spike'],['node','/lab/load.cjs','baseline']]",
+            "message": "Only the reviewed read-only load script may run"
+          },
+          {
+            "expression": "!has(object.spec.template.spec.containers[0].env) && !has(object.spec.template.spec.containers[0].envFrom) && size(object.spec.template.spec.volumes) == 1 && object.spec.template.spec.volumes[0].configMap.name == 'chaos-lab-scripts'",
+            "message": "No secrets or arbitrary script volumes in load jobs"
+          },
+          {
+            "expression": "object.spec.template.metadata.labels['app'] == 'chaos-load' && quantity(dyn(object.spec.template.spec.containers[0].resources).limits['cpu']).compareTo(quantity('300m')) == 0 && quantity(dyn(object.spec.template.spec.containers[0].resources).limits['memory']).compareTo(quantity('128Mi')) == 0",
+            "message": "Load labels and resource limits are fixed"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "metadata": {
+        "name": "banking-chaos-load-boundary"
+      },
+      "spec": {
+        "policyName": "banking-chaos-load-boundary",
+        "validationActions": [
+          "Deny"
+        ]
+      }
+    }
+  ]
+}

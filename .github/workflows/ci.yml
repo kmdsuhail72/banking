@@ -1,4 +1,4 @@
-﻿# =============================================================================
+# =============================================================================
 # Banking Platform — Lightweight CI (Pull Requests)
 #
 # This workflow runs ONLY on pull_requests and provides fast feedback.
@@ -40,6 +40,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Build shared packages
+        run: pnpm --filter "./packages/*" run build --build --force
       - name: Prettier — format check
         run: pnpm exec prettier --check "**/*.{ts,tsx,js,json,md,yml,yaml}"
       - name: ESLint — lint all packages
@@ -95,6 +97,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Build shared packages
+        run: pnpm --filter "./packages/*" run build --build --force
       - name: Run all test suites
         env:
           DB_HOST: localhost

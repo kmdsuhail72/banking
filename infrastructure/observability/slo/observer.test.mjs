@@ -1,0 +1,30 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { sample, initial, exposition } from "./observer.mjs";
+test("recovery needs three good probes and includes flapping time", () => {
+  const s = initial();
+  sample(s, false, 100);
+  sample(s, true, 110);
+  sample(s, false, 120);
+  sample(s, true, 130);
+  sample(s, true, 140);
+  assert.equal(s.recoveries, 0);
+  sample(s, true, 150);
+  assert.equal(s.recoveries, 1);
+  assert.equal(s.sum, 50);
+  assert.equal(s.since, null);
+  assert.equal(s.total, 6);
+  assert.equal(s.good, 4);
+  assert.equal(s.buckets[0], 0);
+  assert.equal(s.buckets[1], 1);
+  assert.match(exposition({ accounts: s }, 150), /le="\+Inf"} 1/);
+});
+test("persisted incident survives observer restart", () => {
+  const s = initial();
+  sample(s, false, 10);
+  const restored = JSON.parse(JSON.stringify(s));
+  sample(restored, true, 100);
+  sample(restored, true, 110);
+  sample(restored, true, 120);
+  assert.equal(restored.sum, 110);
+});

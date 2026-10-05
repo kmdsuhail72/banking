@@ -1,0 +1,54 @@
+{
+  "apiVersion": "chaos-mesh.org/v1alpha1",
+  "kind": "NetworkChaos",
+  "metadata": {
+    "name": "network-latency",
+    "namespace": "banking-chaos",
+    "labels": {
+      "chaos.banking.io/managed": "true"
+    }
+  },
+  "spec": {
+    "mode": "one",
+    "selector": {
+      "namespaces": [
+        "banking-chaos"
+      ],
+      "labelSelectors": {
+        "app": "banking-api",
+        "chaos.banking.io/eligible": "true",
+        "chaos.banking.io/data": "synthetic"
+      },
+      "pods": {
+        "banking-chaos": [
+          "RUNNER_SELECTS_ONE_POD"
+        ]
+      }
+    },
+    "action": "delay",
+    "direction": "to",
+    "target": {
+      "mode": "all",
+      "selector": {
+        "namespaces": [
+          "banking-chaos"
+        ],
+        "labelSelectors": {
+          "app": "dependency-stub",
+          "chaos.banking.io/data": "synthetic"
+        },
+        "pods": {
+          "banking-chaos": [
+            "RUNNER_SELECTS_DEPENDENCY_POD"
+          ]
+        }
+      }
+    },
+    "delay": {
+      "latency": "150ms",
+      "jitter": "20ms",
+      "correlation": "0"
+    },
+    "duration": "60s"
+  }
+}

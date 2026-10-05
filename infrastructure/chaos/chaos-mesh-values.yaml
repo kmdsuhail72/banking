@@ -1,0 +1,20 @@
+# Pin with helm --version 2.8.4. This is not a production chart override.
+clusterScoped: false
+controllerManager:
+  targetNamespace: banking-chaos
+  enableFilterNamespace: true
+  allowHostNetworkTesting: false
+  replicaCount: 1
+  nodeSelector:
+    chaos.banking.io/dedicated: "true"
+chaosDaemon:
+  runtime: containerd
+  socketPath: /run/containerd/containerd.sock
+  nodeSelector:
+    chaos.banking.io/dedicated: "true"
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+dashboard:
+  create: false
+enableProfiling: false

@@ -1,3 +1,4 @@
+import { observeOperation, businessRejection } from "@banking/observability";
 import {
   Injectable,
   ConflictException,
@@ -128,55 +129,70 @@ export class AuthService {
   async login(
     dto: LoginDto,
   ): Promise<{ accessToken: string; refreshToken: string; user: any }> {
-    const email = dto.email.toLowerCase().trim();
-    const user = await this.userModel.findOne({ email });
-    if (!user) {
-      throw new UnauthorizedException("Invalid email or password");
-    }
+    return observeOperation(
+      "auth-service",
+      "authentication",
+      "login",
+      async () => {
+        const email = dto.email.toLowerCase().trim();
+        const user = await this.userModel.findOne({ email });
+        if (!user) {
+          throw businessRejection(
+            new UnauthorizedException("Invalid email or password"),
+          );
+        }
 
-    const isMatch = await argon2.verify(user.passwordHash, dto.password);
-    if (!isMatch) {
-      throw new UnauthorizedException("Invalid email or password");
-    }
+        const isMatch = await argon2.verify(user.passwordHash, dto.password);
+        if (!isMatch) {
+          throw businessRejection(
+            new UnauthorizedException("Invalid email or password"),
+          );
+        }
 
-    if (user.status === UserStatus.SUSPENDED) {
-      throw new UnauthorizedException(
-        "Account is suspended. Please contact support.",
-      );
-    }
+        if (user.status === UserStatus.SUSPENDED) {
+          throw businessRejection(
+            new UnauthorizedException(
+              "Account is suspended. Please contact support.",
+            ),
+          );
+        }
 
-    user.lastLoginAt = new Date();
-    await user.save();
+        user.lastLoginAt = new Date();
+        await user.save();
 
-    const sessionId = uuidv4();
-    const tokens = this.tokenService.generateAuthTokens(
-      user._id.toString(),
-      user.email,
-      user.role,
-      sessionId,
-    );
+        const sessionId = uuidv4();
+        const tokens = this.tokenService.generateAuthTokens(
+          user._id.toString(),
+          user.email,
+          user.role,
+          sessionId,
+        );
 
-    // Save session in Redis
-    await this.redisService.setSession(user._id.toString(), {
-      userId: user._id.toString(),
-      refreshTokenHash: this.tokenService.hashToken(tokens.refreshToken),
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    });
+        // Save session in Redis
+        await this.redisService.setSession(user._id.toString(), {
+          userId: user._id.toString(),
+          refreshTokenHash: this.tokenService.hashToken(tokens.refreshToken),
+          createdAt: new Date().toISOString(),
+          expiresAt: new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+        });
 
-    this.logger.info(`User logged in: ${user.email}`);
+        this.logger.info(`User logged in: ${user.email}`);
 
-    return {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      user: {
-        id: user._id.toString(),
-        email: user.email,
-        role: user.role,
-        status: user.status,
-        emailVerified: user.emailVerified,
+        return {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          user: {
+            id: user._id.toString(),
+            email: user.email,
+            role: user.role,
+            status: user.status,
+            emailVerified: user.emailVerified,
+          },
+        };
       },
-    };
+    );
   }
 
   async refreshToken(token: string): Promise<AuthTokens> {
